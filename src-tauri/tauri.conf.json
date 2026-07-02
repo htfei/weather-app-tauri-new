@@ -1,26 +1,15 @@
 {
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "WeatherApp",
+  "version": "0.1.0",
+  "identifier": "com.example.weather",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
     "devUrl": "http://localhost:5173",
-    "distDir": "../dist"
+    "frontendDist": "../dist"
   },
-  "package": {
-    "productName": "WeatherApp",
-    "version": "0.1.0",
-    "identifier": "com.example.weather"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false
-      }
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all"
-    },
+  "app": {
     "security": {
       "csp": "default-src 'self'; script-src 'self'"
     },
@@ -33,5 +22,9 @@
         "decorations": true
       }
     ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
   }
 }
