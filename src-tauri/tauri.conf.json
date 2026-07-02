@@ -7,7 +7,8 @@
   },
   "package": {
     "productName": "WeatherApp",
-    "version": "0.1.0"
+    "version": "0.1.0",
+    "identifier": "com.example.weather"
   },
   "tauri": {
     "allowlist": {
@@ -18,8 +19,7 @@
     },
     "bundle": {
       "active": true,
-      "targets": "all",
-      "identifier": "com.example.weather"
+      "targets": "all"
     },
     "security": {
       "csp": "default-src 'self'; script-src 'self'"
