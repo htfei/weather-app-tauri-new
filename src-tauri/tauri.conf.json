@@ -1,7 +1,7 @@
 {
   "build": {
-    "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
     "devUrl": "http://localhost:5173",
     "distDir": "../dist"
   },
@@ -19,14 +19,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.example.weather",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ]
+      "identifier": "com.example.weather"
     },
     "security": {
       "csp": "default-src 'self'; script-src 'self'"
