@@ -14,13 +14,13 @@ jobs:
       matrix:
         include:
           - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
+            target: 'aarch64-apple-darwin'
           - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
+            target: 'x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
-            args: ''
+            target: 'x86_64-unknown-linux-gnu'
           - platform: 'windows-latest'
-            args: ''
+            target: 'x86_64-pc-windows-msvc'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -30,23 +30,27 @@ jobs:
       - name: 设置 Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: lts/*
+          node-version: 20
+          cache: 'npm'
 
       - name: 安装 Rust 稳定版
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.target }}
 
       - name: 安装 Linux 依赖
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils libgtk-3-dev
 
       - name: 安装前端依赖
-        run: npm install
+        run: npm ci
 
-      - name: 全局安装 tauri-cli
+      - name: 前端构建
+        run: npm run build
+
+      - name: 安装 tauri-cli
         run: npm install -g @tauri-apps/cli
 
       - name: 执行打包并发布到 GitHub Release
@@ -59,4 +63,4 @@ jobs:
           releaseBody: '请从下方资产下载对应平台的安装包。'
           releaseDraft: false
           prerelease: false
-          args: ${{ matrix.args }}
+          args: '--target ${{ matrix.target }}'
