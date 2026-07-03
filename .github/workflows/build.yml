@@ -47,10 +47,13 @@ jobs:
       - name: 安装前端依赖
         run: npm ci
 
-      - name: 前端构建
-        run: npm run build
-        env:
-          npm_config_scripts_prepend_node_path: true
+      - name: 前端构建 (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: .\node_modules\.bin\vue-tsc.cmd && .\node_modules\.bin\vite.cmd build
+
+      - name: 前端构建 (macOS/Linux)
+        if: matrix.platform != 'windows-latest'
+        run: ./node_modules/.bin/vue-tsc && ./node_modules/.bin/vite build
 
       - name: 安装 tauri-cli
         run: npm install -g @tauri-apps/cli
