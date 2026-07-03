@@ -21,10 +21,10 @@ jobs:
             target: 'aarch64-apple-ios'
           - platform: 'ubuntu-22.04'
             target: 'x86_64-unknown-linux-gnu'
+          - platform: 'ubuntu-22.04'
+            target: 'aarch64-linux-android'
           - platform: 'windows-latest'
             target: 'x86_64-pc-windows-msvc'
-          - platform: 'windows-latest'
-            target: 'aarch64-linux-android'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -48,35 +48,27 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils libgtk-3-dev
 
-      - name: 安装 Android SDK 和 NDK (Windows)
+      - name: 安装 Android SDK 和 NDK (Linux)
         if: matrix.target == 'aarch64-linux-android'
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r26b
           add-to-path: true
 
-      - name: 云端生成 Android Keystore (Windows)
+      - name: 云端生成 Android Keystore (Linux)
         if: matrix.target == 'aarch64-linux-android'
         run: |
-          $keystorePath = "$env:GITHUB_WORKSPACE/weather-app.keystore"
-          $keystorePassword = "tauri_weather_app_2024"
-          $keyAlias = "weather_app"
+          keystorePath="$GITHUB_WORKSPACE/weather-app.keystore"
+          keystorePassword="tauri_weather_app_2024"
+          keyAlias="weather_app"
           
-          $javaPath = Get-Command java -ErrorAction SilentlyContinue
-          if (-not $javaPath) {
-            $javaPath = Get-ChildItem "C:\Program Files\Java\jdk*" -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($javaPath) {
-              $env:PATH = "$($javaPath.FullName)\bin;$env:PATH"
-            }
-          }
+          keytool -genkey -v -keystore "$keystorePath" -alias "$keyAlias" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$keystorePassword" -keypass "$keystorePassword" -dname "CN=WeatherApp, OU=Development, O=WeatherApp, L=Beijing, ST=Beijing, C=CN"
           
-          keytool -genkey -v -keystore $keystorePath -alias $keyAlias -keyalg RSA -keysize 2048 -validity 10000 -storepass $keystorePassword -keypass $keystorePassword -dname "CN=WeatherApp, OU=Development, O=WeatherApp, L=Beijing, ST=Beijing, C=CN"
+          keystoreBase64=$(base64 -w 0 "$keystorePath")
           
-          $keystoreBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($keystorePath))
-          
-          echo "ANDROID_KEYSTORE_BASE64=$keystoreBase64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "ANDROID_KEYSTORE_PASSWORD=$keystorePassword" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "ANDROID_KEY_ALIAS=$keyAlias" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "ANDROID_KEYSTORE_BASE64=$keystoreBase64" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$keystorePassword" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$keyAlias" >> "$GITHUB_ENV"
 
       - name: 设置 iOS 构建环境 (macOS)
         if: matrix.target == 'aarch64-apple-ios'
