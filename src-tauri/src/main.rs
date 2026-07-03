@@ -1,5 +1,8 @@
+// 在 release 模式下隐藏 Windows 控制台黑框窗口
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use serde::{Deserialize, Serialize};
-use tauri::{command, Manager};
+use tauri::command;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct WeatherData {
@@ -53,9 +56,17 @@ async fn get_weather(city: String) -> Result<WeatherData, String> {
         });
     }
     
+    let encoded_city: String = city.chars().map(|c| {
+        if c.is_alphanumeric() || c == '-' || c == '_' {
+            c.to_string()
+        } else {
+            format!("%{:02X}", c as u8)
+        }
+    }).collect();
+
     let url = format!(
         "https://api.openweathermap.org/data/2.5/weather?q={}&appid={}&units=metric&lang=zh_cn",
-        url::percent_encode(city.as_bytes(), url::DEFAULT_ENCODE_SET),
+        encoded_city,
         api_key
     );
     
