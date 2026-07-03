@@ -58,17 +58,24 @@ jobs:
       - name: 设置 Android 交叉编译环境变量 (Linux)
         if: matrix.target == 'aarch64-linux-android'
         run: |
-          export NDK_PATH=$ANDROID_NDK_HOME
-          export TOOLCHAIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64
-          export TARGET=aarch64-linux-android
-          export API=24
-          export CC=$TOOLCHAIN/bin/$TARGET$API-clang
-          export CXX=$TOOLCHAIN/bin/$TARGET$API-clang++
-          export AR=$TOOLCHAIN/bin/$TARGET-ar
-          export LD=$TOOLCHAIN/bin/$TARGET-ld
-          export RANLIB=$TOOLCHAIN/bin/$TARGET-ranlib
-          export STRIP=$TOOLCHAIN/bin/$TARGET-strip
-          export PATH=$TOOLCHAIN/bin:$PATH
+          NDK_PATH=$(ls -d /usr/local/lib/android/sdk/ndk/* | head -n 1)
+          TOOLCHAIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64
+          TARGET=aarch64-linux-android
+          API=24
+          
+          if [ -f "$TOOLCHAIN/bin/$TARGET$API-clang" ]; then
+            CC=$TOOLCHAIN/bin/$TARGET$API-clang
+            CXX=$TOOLCHAIN/bin/$TARGET$API-clang++
+          else
+            CC=$TOOLCHAIN/bin/$TARGET-clang
+            CXX=$TOOLCHAIN/bin/$TARGET-clang++
+          fi
+          
+          AR=$TOOLCHAIN/bin/llvm-ar
+          LD=$TOOLCHAIN/bin/ld.lld
+          RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+          STRIP=$TOOLCHAIN/bin/llvm-strip
+          
           echo "NDK_PATH=$NDK_PATH" >> "$GITHUB_ENV"
           echo "TOOLCHAIN=$TOOLCHAIN" >> "$GITHUB_ENV"
           echo "TARGET=$TARGET" >> "$GITHUB_ENV"
@@ -79,7 +86,7 @@ jobs:
           echo "LD=$LD" >> "$GITHUB_ENV"
           echo "RANLIB=$RANLIB" >> "$GITHUB_ENV"
           echo "STRIP=$STRIP" >> "$GITHUB_ENV"
-          echo "PATH=$PATH" >> "$GITHUB_ENV"
+          echo "PATH=$TOOLCHAIN/bin:$PATH" >> "$GITHUB_ENV"
 
       - name: 云端生成 Android Keystore (Linux)
         if: matrix.target == 'aarch64-linux-android'
