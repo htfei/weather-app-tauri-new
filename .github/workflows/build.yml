@@ -46,6 +46,9 @@ jobs:
       - name: 安装前端依赖
         run: npm install
 
+      - name: 全局安装 tauri-cli
+        run: npm install -g @tauri-apps/cli
+
       - name: 执行打包并发布到 GitHub Release
         uses: tauri-apps/tauri-action@v1
         env:
