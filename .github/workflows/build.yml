@@ -87,6 +87,8 @@ jobs:
           echo "RANLIB=$RANLIB" >> "$GITHUB_ENV"
           echo "STRIP=$STRIP" >> "$GITHUB_ENV"
           echo "PATH=$TOOLCHAIN/bin:$PATH" >> "$GITHUB_ENV"
+          echo "OPENSSL_NO_VENDOR=0" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_SYSROOT_DIR=$TOOLCHAIN/sysroot" >> "$GITHUB_ENV"
 
       - name: 云端生成 Android Keystore (Linux)
         if: matrix.target == 'aarch64-linux-android'
