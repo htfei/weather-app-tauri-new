@@ -55,6 +55,39 @@ jobs:
           ndk-version: r26b
           add-to-path: true
 
+      - name: 云端生成 Android Keystore (Windows)
+        if: matrix.target == 'aarch64-linux-android'
+        run: |
+          $keystorePath = "$env:GITHUB_WORKSPACE/weather-app.keystore"
+          $keystorePassword = "tauri_weather_app_2024"
+          $keyAlias = "weather_app"
+          
+          $javaPath = Get-Command java -ErrorAction SilentlyContinue
+          if (-not $javaPath) {
+            $javaPath = Get-ChildItem "C:\Program Files\Java\jdk*" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($javaPath) {
+              $env:PATH = "$($javaPath.FullName)\bin;$env:PATH"
+            }
+          }
+          
+          keytool -genkey -v -keystore $keystorePath -alias $keyAlias -keyalg RSA -keysize 2048 -validity 10000 -storepass $keystorePassword -keypass $keystorePassword -dname "CN=WeatherApp, OU=Development, O=WeatherApp, L=Beijing, ST=Beijing, C=CN"
+          
+          $keystoreBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($keystorePath))
+          
+          echo "ANDROID_KEYSTORE_BASE64=$keystoreBase64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "ANDROID_KEYSTORE_PASSWORD=$keystorePassword" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "ANDROID_KEY_ALIAS=$keyAlias" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: 设置 iOS 构建环境 (macOS)
+        if: matrix.target == 'aarch64-apple-ios'
+        run: |
+          echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> $GITHUB_ENV
+          echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> $GITHUB_ENV
+          echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> $GITHUB_ENV
+          echo "APPLE_PROVISIONING_PROFILE=${{ secrets.APPLE_PROVISIONING_PROFILE }}" >> $GITHUB_ENV
+          echo "APPLE_CERTIFICATE=${{ secrets.APPLE_CERTIFICATE }}" >> $GITHUB_ENV
+          echo "APPLE_CERTIFICATE_PASSWORD=${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" >> $GITHUB_ENV
+
       - name: 安装前端依赖
         run: npm ci
 
@@ -73,6 +106,15 @@ jobs:
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          ANDROID_KEYSTORE_BASE64: ${{ env.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ env.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ env.ANDROID_KEY_ALIAS }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'WeatherApp ${{ github.ref_name }}'
