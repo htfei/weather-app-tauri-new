@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx --yes vue-tsc@^2.0.6 && npx --yes vite@^5.2.8 build",
+    "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
