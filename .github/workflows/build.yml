@@ -175,7 +175,7 @@ jobs:
         run: npx tauri android init
 
       - name: 构建 Android APK
-        run: npx tauri android build -- --apk
+        run: npx tauri android build
         env:
           ANDROID_KEYSTORE_BASE64: ${{ env.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ env.ANDROID_KEYSTORE_PASSWORD }}
