@@ -9,87 +9,66 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # publish-tauri:
-  #   permissions:
-  #     contents: write
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       include:
-  #         - platform: 'macos-latest'
-  #           target: 'aarch64-apple-darwin'
-  #         - platform: 'macos-latest'
-  #           target: 'x86_64-apple-darwin'
-  #         - platform: 'macos-latest'
-  #           target: 'aarch64-apple-ios'
-  #         - platform: 'ubuntu-22.04'
-  #           target: 'x86_64-unknown-linux-gnu'
-  #         - platform: 'windows-latest'
-  #           target: 'x86_64-pc-windows-msvc'
-  #
-  #   runs-on: ${{ matrix.platform }}
-  #   steps:
-  #     - name: 签出代码
-  #       uses: actions/checkout@v5
-  #
-  #     - name: 设置 Node.js
-  #       uses: actions/setup-node@v5
-  #       with:
-  #         node-version: 20
-  #         cache: 'npm'
-  #
-  #     - name: 安装 Rust 稳定版
-  #       uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         targets: ${{ matrix.target }}
-  #
-  #     - name: 安装 Linux 依赖
-  #       if: matrix.platform == 'ubuntu-22.04'
-  #       run: |
-  #         sudo apt-get update
-  #         sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils libgtk-3-dev
-  #
-  #     - name: 设置 iOS 构建环境 (macOS)
-  #       if: matrix.target == 'aarch64-apple-ios'
-  #       run: |
-  #         echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> $GITHUB_ENV
-  #         echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> $GITHUB_ENV
-  #         echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> $GITHUB_ENV
-  #         echo "APPLE_PROVISIONING_PROFILE=${{ secrets.APPLE_PROVISIONING_PROFILE }}" >> $GITHUB_ENV
-  #         echo "APPLE_CERTIFICATE=${{ secrets.APPLE_CERTIFICATE }}" >> $GITHUB_ENV
-  #         echo "APPLE_CERTIFICATE_PASSWORD=${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" >> $GITHUB_ENV
-  #
-  #     - name: 安装前端依赖
-  #       run: npm ci
-  #
-  #     - name: 前端构建 (Windows)
-  #       if: matrix.platform == 'windows-latest'
-  #       run: .\node_modules\.bin\vue-tsc.cmd && .\node_modules\.bin\vite.cmd build
-  #
-  #     - name: 前端构建 (macOS/Linux)
-  #       if: matrix.platform != 'windows-latest'
-  #       run: ./node_modules/.bin/vue-tsc && ./node_modules/.bin/vite build
-  #
-  #     - name: 安装 tauri-cli
-  #       run: npm install -g @tauri-apps/cli
-  #
-  #     - name: 执行打包并发布到 GitHub Release
-  #       uses: tauri-apps/tauri-action@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         APPLE_ID: ${{ secrets.APPLE_ID }}
-  #         APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-  #         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-  #         APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
-  #         APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-  #         APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-  #       with:
-  #         tagName: ${{ github.ref_name }}
-  #         releaseName: 'WeatherApp ${{ github.ref_name }}'
-  #         releaseBody: '请从下方资产下载对应平台的安装包。'
-  #         releaseDraft: false
-  #         prerelease: false
-  #         args: '--target ${{ matrix.target }}'
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            target: 'aarch64-apple-darwin'
+          - platform: 'macos-latest'
+            target: 'x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            target: 'x86_64-unknown-linux-gnu'
+          - platform: 'windows-latest'
+            target: 'x86_64-pc-windows-msvc'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v5
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: 安装 Rust 稳定版
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: 安装 Linux 依赖
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils libgtk-3-dev
+
+      - name: 安装前端依赖
+        run: npm ci
+
+      - name: 前端构建 (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: .\node_modules\.bin\vue-tsc.cmd && .\node_modules\.bin\vite.cmd build
+
+      - name: 前端构建 (macOS/Linux)
+        if: matrix.platform != 'windows-latest'
+        run: ./node_modules/.bin/vue-tsc && ./node_modules/.bin/vite build
+
+      - name: 执行打包并发布到 GitHub Release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'WeatherApp ${{ github.ref_name }}'
+          releaseBody: '请从下方资产下载对应平台的安装包。'
+          releaseDraft: false
+          prerelease: false
+          args: '--target ${{ matrix.target }}'
 
   publish-android:
     permissions:
