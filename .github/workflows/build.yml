@@ -21,8 +21,6 @@ jobs:
             target: 'aarch64-apple-ios'
           - platform: 'ubuntu-22.04'
             target: 'x86_64-unknown-linux-gnu'
-          - platform: 'ubuntu-22.04'
-            target: 'aarch64-linux-android'
           - platform: 'windows-latest'
             target: 'x86_64-pc-windows-msvc'
 
@@ -47,64 +45,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils libgtk-3-dev
-
-      - name: 安装 Android SDK 和 NDK (Linux)
-        if: matrix.target == 'aarch64-linux-android'
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r26b
-          add-to-path: true
-
-      - name: 设置 Android 交叉编译环境变量 (Linux)
-        if: matrix.target == 'aarch64-linux-android'
-        run: |
-          NDK_PATH=$(ls -d /usr/local/lib/android/sdk/ndk/* | head -n 1)
-          TOOLCHAIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64
-          TARGET=aarch64-linux-android
-          API=24
-          
-          if [ -f "$TOOLCHAIN/bin/$TARGET$API-clang" ]; then
-            CC=$TOOLCHAIN/bin/$TARGET$API-clang
-            CXX=$TOOLCHAIN/bin/$TARGET$API-clang++
-          else
-            CC=$TOOLCHAIN/bin/$TARGET-clang
-            CXX=$TOOLCHAIN/bin/$TARGET-clang++
-          fi
-          
-          AR=$TOOLCHAIN/bin/llvm-ar
-          LD=$TOOLCHAIN/bin/ld.lld
-          RANLIB=$TOOLCHAIN/bin/llvm-ranlib
-          STRIP=$TOOLCHAIN/bin/llvm-strip
-          
-          echo "NDK_PATH=$NDK_PATH" >> "$GITHUB_ENV"
-          echo "TOOLCHAIN=$TOOLCHAIN" >> "$GITHUB_ENV"
-          echo "TARGET=$TARGET" >> "$GITHUB_ENV"
-          echo "API=$API" >> "$GITHUB_ENV"
-          echo "CC=$CC" >> "$GITHUB_ENV"
-          echo "CXX=$CXX" >> "$GITHUB_ENV"
-          echo "AR=$AR" >> "$GITHUB_ENV"
-          echo "LD=$LD" >> "$GITHUB_ENV"
-          echo "RANLIB=$RANLIB" >> "$GITHUB_ENV"
-          echo "STRIP=$STRIP" >> "$GITHUB_ENV"
-          echo "PATH=$TOOLCHAIN/bin:$PATH" >> "$GITHUB_ENV"
-          echo "OPENSSL_NO_VENDOR=0" >> "$GITHUB_ENV"
-          echo "PKG_CONFIG_SYSROOT_DIR=$TOOLCHAIN/sysroot" >> "$GITHUB_ENV"
-          echo "RUSTFLAGS=-C target-feature=-crt-static -L $TOOLCHAIN/sysroot/usr/lib/$TARGET/$API -L $TOOLCHAIN/sysroot/usr/lib/$TARGET" >> "$GITHUB_ENV"
-
-      - name: 云端生成 Android Keystore (Linux)
-        if: matrix.target == 'aarch64-linux-android'
-        run: |
-          keystorePath="$GITHUB_WORKSPACE/weather-app.keystore"
-          keystorePassword="tauri_weather_app_2024"
-          keyAlias="weather_app"
-          
-          keytool -genkey -v -keystore "$keystorePath" -alias "$keyAlias" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$keystorePassword" -keypass "$keystorePassword" -dname "CN=WeatherApp, OU=Development, O=WeatherApp, L=Beijing, ST=Beijing, C=CN"
-          
-          keystoreBase64=$(base64 -w 0 "$keystorePath")
-          
-          echo "ANDROID_KEYSTORE_BASE64=$keystoreBase64" >> "$GITHUB_ENV"
-          echo "ANDROID_KEYSTORE_PASSWORD=$keystorePassword" >> "$GITHUB_ENV"
-          echo "ANDROID_KEY_ALIAS=$keyAlias" >> "$GITHUB_ENV"
 
       - name: 设置 iOS 构建环境 (macOS)
         if: matrix.target == 'aarch64-apple-ios'
@@ -140,9 +80,6 @@ jobs:
           APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          ANDROID_KEYSTORE_BASE64: ${{ env.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ env.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ env.ANDROID_KEY_ALIAS }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'WeatherApp ${{ github.ref_name }}'
@@ -150,3 +87,105 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: '--target ${{ matrix.target }}'
+
+  publish-android:
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v5
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 安装 Rust 稳定版
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: 安装 Android SDK 和 NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26b
+          add-to-path: true
+
+      - name: 设置 Android 交叉编译环境变量
+        run: |
+          NDK_PATH=$(ls -d /usr/local/lib/android/sdk/ndk/* | head -n 1)
+          TOOLCHAIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64
+          TARGET=aarch64-linux-android
+          API=24
+          
+          if [ -f "$TOOLCHAIN/bin/$TARGET$API-clang" ]; then
+            CC=$TOOLCHAIN/bin/$TARGET$API-clang
+            CXX=$TOOLCHAIN/bin/$TARGET$API-clang++
+          else
+            CC=$TOOLCHAIN/bin/$TARGET-clang
+            CXX=$TOOLCHAIN/bin/$TARGET-clang++
+          fi
+          
+          AR=$TOOLCHAIN/bin/llvm-ar
+          LD=$TOOLCHAIN/bin/ld.lld
+          RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+          STRIP=$TOOLCHAIN/bin/llvm-strip
+          
+          echo "NDK_PATH=$NDK_PATH" >> "$GITHUB_ENV"
+          echo "TOOLCHAIN=$TOOLCHAIN" >> "$GITHUB_ENV"
+          echo "TARGET=$TARGET" >> "$GITHUB_ENV"
+          echo "API=$API" >> "$GITHUB_ENV"
+          echo "CC=$CC" >> "$GITHUB_ENV"
+          echo "CXX=$CXX" >> "$GITHUB_ENV"
+          echo "AR=$AR" >> "$GITHUB_ENV"
+          echo "LD=$LD" >> "$GITHUB_ENV"
+          echo "RANLIB=$RANLIB" >> "$GITHUB_ENV"
+          echo "STRIP=$STRIP" >> "$GITHUB_ENV"
+          echo "PATH=$TOOLCHAIN/bin:$PATH" >> "$GITHUB_ENV"
+          echo "OPENSSL_NO_VENDOR=0" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_SYSROOT_DIR=$TOOLCHAIN/sysroot" >> "$GITHUB_ENV"
+          echo "RUSTFLAGS=-C target-feature=-crt-static -L $TOOLCHAIN/sysroot/usr/lib/$TARGET/$API -L $TOOLCHAIN/sysroot/usr/lib/$TARGET" >> "$GITHUB_ENV"
+
+      - name: 云端生成 Android Keystore
+        run: |
+          keystorePath="$GITHUB_WORKSPACE/weather-app.keystore"
+          keystorePassword="tauri_weather_app_2024"
+          keyAlias="weather_app"
+          
+          keytool -genkey -v -keystore "$keystorePath" -alias "$keyAlias" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$keystorePassword" -keypass "$keystorePassword" -dname "CN=WeatherApp, OU=Development, O=WeatherApp, L=Beijing, ST=Beijing, C=CN"
+          
+          keystoreBase64=$(base64 -w 0 "$keystorePath")
+          
+          echo "ANDROID_KEYSTORE_BASE64=$keystoreBase64" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$keystorePassword" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$keyAlias" >> "$GITHUB_ENV"
+
+      - name: 安装前端依赖
+        run: npm ci
+
+      - name: 前端构建
+        run: ./node_modules/.bin/vue-tsc && ./node_modules/.bin/vite build
+
+      - name: 安装 tauri-cli
+        run: npm install -g @tauri-apps/cli
+
+      - name: 初始化 Android 项目
+        run: npx tauri android init
+
+      - name: 构建 Android APK
+        run: npx tauri android build -- --apk
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ env.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ env.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ env.ANDROID_KEY_ALIAS }}
+
+      - name: 上传 Android APK 到 Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            src-tauri/gen/android/app/build/outputs/apk/release/*.apk
