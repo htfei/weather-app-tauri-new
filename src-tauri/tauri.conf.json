@@ -20,7 +20,10 @@
         "resizable": true,
         "decorations": true
       }
-    ]
+    ],
+    "android": {
+      "extractAssets": true
+    }
   },
   "bundle": {
     "active": true,
@@ -31,9 +34,6 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "android": {
-      "targets": ["aarch64"]
-    }
+    ]
   }
 }
