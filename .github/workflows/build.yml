@@ -191,6 +191,8 @@ jobs:
             --key-pass pass:"${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
             --out "$signed_apk" \
             "$aligned_apk"
+          
+          rm "$unsigned_apk" "$aligned_apk"
 
       - name: 上传 Android APK 到 Release
         uses: softprops/action-gh-release@v1
@@ -199,4 +201,4 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+            src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
