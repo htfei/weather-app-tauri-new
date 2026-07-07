@@ -172,23 +172,6 @@ jobs:
       - name: 初始化 Android 项目
         run: npx tauri android init
 
-      - name: 修改 build.gradle.kts 只构建 aarch64
-        run: |
-          cd src-tauri/gen/android/app
-          python3 << 'PYEOF'
-          with open('build.gradle.kts', 'r') as f:
-              content = f.read()
-          
-          if 'abiFilters' not in content:
-              content = content.replace(
-                  'android {',
-                  'android {\n    ndk {\n        abiFilters += "arm64-v8a"\n    }'
-              )
-          
-          with open('build.gradle.kts', 'w') as f:
-              f.write(content)
-          PYEOF
-
       - name: 构建 Android APK
         run: npx tauri android build --target aarch64
 
