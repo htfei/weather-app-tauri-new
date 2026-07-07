@@ -179,6 +179,7 @@ jobs:
         run: |
           unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
           signed_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
+          zipalign_path="$ANDROID_HOME/build-tools/34.0.0/zipalign"
           
           cp "$unsigned_apk" "$signed_apk"
           
@@ -188,7 +189,7 @@ jobs:
             -keypass "${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
             "$signed_apk" "${{ env.ANDROID_KEY_ALIAS }}"
           
-          zipalign -v 4 "$signed_apk" "${signed_apk%.apk}-aligned.apk"
+          "$zipalign_path" -v 4 "$signed_apk" "${signed_apk%.apk}-aligned.apk"
           mv "${signed_apk%.apk}-aligned.apk" "$signed_apk"
 
       - name: 上传 Android APK 到 Release
