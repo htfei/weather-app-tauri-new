@@ -172,63 +172,21 @@ jobs:
       - name: 初始化 Android 项目
         run: npx tauri android init
 
-      - name: 配置 Android 签名
-        run: |
-          cd src-tauri/gen/android
-          echo "keyAlias=${{ env.ANDROID_KEY_ALIAS }}" > keystore.properties
-          echo "storePassword=${{ env.ANDROID_KEYSTORE_PASSWORD }}" >> keystore.properties
-          echo "keyPassword=${{ env.ANDROID_KEYSTORE_PASSWORD }}" >> keystore.properties
-          echo "storeFile=$GITHUB_WORKSPACE/weather-app.keystore" >> keystore.properties
-
-      - name: 修改 build.gradle.kts 添加签名配置
-        run: |
-          cd src-tauri/gen/android/app
-          python3 << 'PYEOF'
-          import re
-
-          with open('build.gradle.kts', 'r') as f:
-              content = f.read()
-
-          imports = '''import java.util.Properties
-          import java.io.FileInputStream
-
-          val keystorePropertiesFile = rootProject.file("keystore.properties")
-          val keystoreProperties = Properties()
-          if (keystorePropertiesFile.exists()) {
-              keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-          }
-
-          '''
-
-          content = imports + content
-
-          signing_config = '''
-              signingConfigs {
-                  create("release") {
-                      keyAlias = keystoreProperties["keyAlias"] as String
-                      keyPassword = keystoreProperties["keyPassword"] as String
-                      storeFile = file(keystoreProperties["storeFile"] as String)
-                      storePassword = keystoreProperties["storePassword"] as String
-                  }
-              }
-          '''
-
-          content = content.replace(
-              'buildTypes {',
-              'signingConfigs {\n                  create("release") {\n                      keyAlias = keystoreProperties["keyAlias"] as String\n                      keyPassword = keystoreProperties["keyPassword"] as String\n                      storeFile = file(keystoreProperties["storeFile"] as String)\n                      storePassword = keystoreProperties["storePassword"] as String\n                  }\n              }\n              buildTypes {'
-          )
-
-          content = content.replace(
-              'getByName("release") {',
-              'getByName("release") {\n                      signingConfig = signingConfigs.getByName("release")'
-          )
-
-          with open('build.gradle.kts', 'w') as f:
-              f.write(content)
-          PYEOF
-
       - name: 构建 Android APK
         run: npx tauri android build --target aarch64
+
+      - name: 签名 Android APK
+        run: |
+          unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
+          signed_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
+          
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore "$GITHUB_WORKSPACE/weather-app.keystore" \
+            -storepass "${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
+            -keypass "${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
+            "$unsigned_apk" "${{ env.ANDROID_KEY_ALIAS }}"
+          
+          cp "$unsigned_apk" "$signed_apk"
 
       - name: 上传 Android APK 到 Release
         uses: softprops/action-gh-release@v1
