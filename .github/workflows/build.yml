@@ -172,14 +172,30 @@ jobs:
       - name: 初始化 Android 项目
         run: npx tauri android init
 
+      - name: 修改 build.gradle.kts 只构建 aarch64
+        run: |
+          cd src-tauri/gen/android/app
+          python3 << 'PYEOF'
+          with open('build.gradle.kts', 'r') as f:
+              content = f.read()
+          
+          content = content.replace(
+              'ndk {',
+              'ndk {\n            abiFilters += "arm64-v8a"'
+          )
+          
+          with open('build.gradle.kts', 'w') as f:
+              f.write(content)
+          PYEOF
+
       - name: 构建 Android APK
         run: npx tauri android build --target aarch64
 
       - name: 签名 Android APK
         run: |
-          unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
-          aligned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-aligned.apk"
-          signed_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
+          unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          aligned_apk="src-tauri/gen/android/app/build/outputs/apk/release/app-release-aligned.apk"
+          signed_apk="src-tauri/gen/android/app/build/outputs/apk/release/app-release.apk"
           zipalign_path="$ANDROID_HOME/build-tools/34.0.0/zipalign"
           apksigner_path="$ANDROID_HOME/build-tools/34.0.0/apksigner"
           
@@ -201,4 +217,4 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+            src-tauri/gen/android/app/build/outputs/apk/release/app-release.apk
