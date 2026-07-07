@@ -1,4 +1,6 @@
-use serde::{Deserialize, Serialize};
+import os
+
+code = '''use serde::{Deserialize, Serialize};
 use tauri::command;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -106,3 +108,9 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+'''
+
+with open(r'd:\dev\Tauri\weather-app\src-tauri\src\lib.rs', 'w', encoding='utf-8') as f:
+    f.write(code)
+
+print('lib.rs updated successfully')
