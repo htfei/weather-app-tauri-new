@@ -178,19 +178,19 @@ jobs:
       - name: 签名 Android APK
         run: |
           unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
+          aligned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-aligned.apk"
           signed_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
           zipalign_path="$ANDROID_HOME/build-tools/34.0.0/zipalign"
+          apksigner_path="$ANDROID_HOME/build-tools/34.0.0/apksigner"
           
-          cp "$unsigned_apk" "$signed_apk"
+          "$zipalign_path" -v 4 "$unsigned_apk" "$aligned_apk"
           
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore "$GITHUB_WORKSPACE/weather-app.keystore" \
-            -storepass "${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
-            -keypass "${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
-            "$signed_apk" "${{ env.ANDROID_KEY_ALIAS }}"
-          
-          "$zipalign_path" -v 4 "$signed_apk" "${signed_apk%.apk}-aligned.apk"
-          mv "${signed_apk%.apk}-aligned.apk" "$signed_apk"
+          "$apksigner_path" sign \
+            --ks "$GITHUB_WORKSPACE/weather-app.keystore" \
+            --ks-pass pass:"${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
+            --key-pass pass:"${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
+            --out "$signed_apk" \
+            "$aligned_apk"
 
       - name: 上传 Android APK 到 Release
         uses: softprops/action-gh-release@v1
