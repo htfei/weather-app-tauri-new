@@ -180,13 +180,16 @@ jobs:
           unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
           signed_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
           
+          cp "$unsigned_apk" "$signed_apk"
+          
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
             -keystore "$GITHUB_WORKSPACE/weather-app.keystore" \
             -storepass "${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
             -keypass "${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
-            "$unsigned_apk" "${{ env.ANDROID_KEY_ALIAS }}"
+            "$signed_apk" "${{ env.ANDROID_KEY_ALIAS }}"
           
-          cp "$unsigned_apk" "$signed_apk"
+          zipalign -v 4 "$signed_apk" "${signed_apk%.apk}-aligned.apk"
+          mv "${signed_apk%.apk}-aligned.apk" "$signed_apk"
 
       - name: 上传 Android APK 到 Release
         uses: softprops/action-gh-release@v1
