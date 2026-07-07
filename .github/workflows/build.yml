@@ -179,10 +179,11 @@ jobs:
           with open('build.gradle.kts', 'r') as f:
               content = f.read()
           
-          content = content.replace(
-              'ndk {',
-              'ndk {\n            abiFilters += "arm64-v8a"'
-          )
+          if 'abiFilters' not in content:
+              content = content.replace(
+                  'android {',
+                  'android {\n    ndk {\n        abiFilters += "arm64-v8a"\n    }'
+              )
           
           with open('build.gradle.kts', 'w') as f:
               f.write(content)
@@ -193,9 +194,9 @@ jobs:
 
       - name: 签名 Android APK
         run: |
-          unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/release/app-release-unsigned.apk"
-          aligned_apk="src-tauri/gen/android/app/build/outputs/apk/release/app-release-aligned.apk"
-          signed_apk="src-tauri/gen/android/app/build/outputs/apk/release/app-release.apk"
+          unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
+          aligned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-aligned.apk"
+          signed_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
           zipalign_path="$ANDROID_HOME/build-tools/34.0.0/zipalign"
           apksigner_path="$ANDROID_HOME/build-tools/34.0.0/apksigner"
           
@@ -217,4 +218,4 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            src-tauri/gen/android/app/build/outputs/apk/release/app-release.apk
+            src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
