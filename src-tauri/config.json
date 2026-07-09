@@ -1,0 +1,18 @@
+{
+  "websites": [
+    {
+      "id": "juejin",
+      "name": "掘金",
+      "url": "https://juejin.cn/",
+      "userscript_url": "https://scriptcat.org/scripts/code/3087/%E5%9C%A8%E7%BA%BF%E7%BD%91%E9%A1%B5%E8%81%8A%E5%A4%A9%E5%AE%A4.user.js",
+      "icon": "https://lf3-cdn-tos.bytescm.com/obj/static/xitu_juejin_web/71a7d85c31f564886e5c3d2c0904575a.svg"
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "url": "https://github.com/",
+      "userscript_url": "",
+      "icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+    }
+  ]
+}

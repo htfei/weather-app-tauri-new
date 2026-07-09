@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "WeatherApp",
-  "version": "0.1.0",
-  "identifier": "com.example.weather",
+  "productName": "WebWrapper",
+  "version": "1.0.0",
+  "identifier": "com.example.webwrapper",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -10,17 +10,8 @@
   },
   "app": {
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; connect-src 'self' https://api.openweathermap.org"
-    },
-    "windows": [
-      {
-        "title": "天气查询",
-        "width": 450,
-        "height": 600,
-        "resizable": true,
-        "decorations": true
-      }
-    ]
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://* http://ipc.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    }
   },
   "bundle": {
     "active": true,
