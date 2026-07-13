@@ -10,7 +10,8 @@
   },
   "app": {
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://* http://ipc.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://* http://ipc.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*; style-src 'self' 'unsafe-inline' https://*",
+      "capabilities": ["default"]
     }
   },
   "bundle": {

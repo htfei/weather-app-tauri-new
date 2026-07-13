@@ -1,11 +1,26 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
+  "$schema": "../schema.json",
   "identifier": "default",
-  "description": "Default capabilities for WebWrapper",
+  "description": "Default permissions for WebWrapper",
+  "version": "1.0.0",
   "windows": ["main"],
   "permissions": [
-    "core:webview:default",
-    "core:window:default",
-    "core:app:default"
-  ]
+    "core:default",
+    "core:webview:default"
+  ],
+  "commands": {
+    "allow": [
+      "navigate_to_url",
+      "install_script",
+      "install_script_from_url",
+      "list_scripts",
+      "toggle_script",
+      "delete_script",
+      "find_scripts_for_url",
+      "gm_storage_get",
+      "gm_storage_set",
+      "gm_storage_delete",
+      "gm_xhr_proxy"
+    ]
+  }
 }

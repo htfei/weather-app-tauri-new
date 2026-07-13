@@ -1,4 +1,4 @@
-name: '自动全平台编译与发布'
+name: 'WebWrapper 自动全平台编译与发布'
 
 on:
   push:
@@ -59,12 +59,12 @@ jobs:
         run: ./node_modules/.bin/vue-tsc && ./node_modules/.bin/vite build
 
       - name: 执行打包并发布到 GitHub Release
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'WeatherApp ${{ github.ref_name }}'
+          releaseName: 'WebWrapper ${{ github.ref_name }}'
           releaseBody: '请从下方资产下载对应平台的安装包。'
           releaseDraft: false
           prerelease: false
@@ -100,7 +100,7 @@ jobs:
           mkdir -p /usr/local/lib/android/sdk
           export ANDROID_HOME=/usr/local/lib/android/sdk
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          
+
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
           unzip -q cmdline-tools.zip -d $ANDROID_HOME
           mv $ANDROID_HOME/cmdline-tools $ANDROID_HOME/cmdline-tools-temp
@@ -108,7 +108,7 @@ jobs:
           mv $ANDROID_HOME/cmdline-tools-temp/* $ANDROID_HOME/cmdline-tools/latest/
           rm -rf $ANDROID_HOME/cmdline-tools-temp
           rm cmdline-tools.zip
-          
+
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "platform-tools" "build-tools;34.0.0" "ndk;26.1.10909125"
 
@@ -118,7 +118,7 @@ jobs:
           TOOLCHAIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64
           TARGET=aarch64-linux-android
           API=24
-          
+
           if [ -f "$TOOLCHAIN/bin/$TARGET$API-clang" ]; then
             CC=$TOOLCHAIN/bin/$TARGET$API-clang
             CXX=$TOOLCHAIN/bin/$TARGET$API-clang++
@@ -126,12 +126,12 @@ jobs:
             CC=$TOOLCHAIN/bin/$TARGET-clang
             CXX=$TOOLCHAIN/bin/$TARGET-clang++
           fi
-          
+
           AR=$TOOLCHAIN/bin/llvm-ar
           LD=$TOOLCHAIN/bin/ld.lld
           RANLIB=$TOOLCHAIN/bin/llvm-ranlib
           STRIP=$TOOLCHAIN/bin/llvm-strip
-          
+
           echo "NDK_PATH=$NDK_PATH" >> "$GITHUB_ENV"
           echo "TOOLCHAIN=$TOOLCHAIN" >> "$GITHUB_ENV"
           echo "TARGET=$TARGET" >> "$GITHUB_ENV"
@@ -146,19 +146,15 @@ jobs:
           echo "PKG_CONFIG_SYSROOT_DIR=$TOOLCHAIN/sysroot" >> "$GITHUB_ENV"
           echo "RUSTFLAGS=-C target-feature=-crt-static" >> "$GITHUB_ENV"
 
-      - name: 云端生成 Android Keystore
+      - name: 还原 Android Keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          keystorePath="$GITHUB_WORKSPACE/weather-app.keystore"
-          keystorePassword="tauri_weather_app_2024"
-          keyAlias="weather_app"
-          
-          keytool -genkey -v -keystore "$keystorePath" -alias "$keyAlias" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$keystorePassword" -keypass "$keystorePassword" -dname "CN=WeatherApp, OU=Development, O=WeatherApp, L=Beijing, ST=Beijing, C=CN"
-          
-          keystoreBase64=$(base64 -w 0 "$keystorePath")
-          
-          echo "ANDROID_KEYSTORE_BASE64=$keystoreBase64" >> "$GITHUB_ENV"
-          echo "ANDROID_KEYSTORE_PASSWORD=$keystorePassword" >> "$GITHUB_ENV"
-          echo "ANDROID_KEY_ALIAS=$keyAlias" >> "$GITHUB_ENV"
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "错误：未设置 ANDROID_KEYSTORE_BASE64 Secret" >&2
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/webwrapper.keystore"
 
       - name: 安装前端依赖
         run: npm ci
@@ -174,24 +170,32 @@ jobs:
 
       - name: 构建 Android APK
         run: npx tauri android build --target aarch64
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
       - name: 签名 Android APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
           aligned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-aligned.apk"
           signed_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
           zipalign_path="$ANDROID_HOME/build-tools/34.0.0/zipalign"
           apksigner_path="$ANDROID_HOME/build-tools/34.0.0/apksigner"
-          
+
           "$zipalign_path" -v 4 "$unsigned_apk" "$aligned_apk"
-          
+
           "$apksigner_path" sign \
-            --ks "$GITHUB_WORKSPACE/weather-app.keystore" \
-            --ks-pass pass:"${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
-            --key-pass pass:"${{ env.ANDROID_KEYSTORE_PASSWORD }}" \
+            --ks "$GITHUB_WORKSPACE/webwrapper.keystore" \
+            --ks-pass pass:"$ANDROID_KEYSTORE_PASSWORD" \
+            --key-pass pass:"$ANDROID_KEY_PASSWORD" \
             --out "$signed_apk" \
             "$aligned_apk"
-          
+
           rm "$unsigned_apk" "$aligned_apk"
 
       - name: 上传 Android APK 到 Release
