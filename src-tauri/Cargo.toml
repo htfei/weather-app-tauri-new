@@ -11,13 +11,15 @@ crate-type = ["cdylib", "lib"]
 tauri = { version = "2", features = ["wry", "rustls-tls", "custom-protocol"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "blocking"] }
 dirs = "5.0"
 tokio = { version = "1", features = ["full"] }
 url = "2.5"
 regex = "1.10"
 rusqlite = { version = "0.32", features = ["bundled", "serde_json"] }
 uuid = { version = "1", features = ["v4"] }
+tiny_http = "0.12"
+urlencoding = "2"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

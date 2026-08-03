@@ -1,469 +1,596 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import type { RadioCatalog, RadioSource } from './types/radio'
+import { useRadioPlayer } from './composables/useRadioPlayer'
 
-interface ScriptItem {
-  id: string
-  name: string
-  namespace: string
-  version: string
-  homepage: string
-  icon: string
-  update_url: string
-  matches: string[]
-  includes: string[]
-  excludes: string[]
-  run_at: string
-  requires: string[]
-  grants: string[]
-  enabled: boolean
-}
+const {
+  currentSource,
+  state,
+  errorMessage,
+  volume,
+  play,
+  togglePlay,
+  stop,
+  setVolume,
+} = useRadioPlayer()
 
+const catalog = ref<RadioCatalog | null>(null)
+const favorites = ref<Set<string>>(new Set())
 const searchQuery = ref('')
-const scriptUrl = ref('')
+const selectedCategory = ref('全部')
+const loading = ref(false)
 const currentView = ref<'home' | 'settings'>('home')
-const scripts = ref<ScriptItem[]>([])
-const installError = ref('')
-const installSuccess = ref('')
+const catalogUrl = ref('')
+const fileInput = ref<HTMLInputElement | null>(null)
+const toast = ref('')
 
-const bookmarks = [
-  { name: '掘金', url: 'https://juejin.cn/', color: '#007FFF' },
-  { name: 'V2EX', url: 'https://www.v2ex.com/', color: '#7C5AFC' },
-  { name: 'GitHub', url: 'https://github.com/', color: '#171515' },
-  { name: '知乎', url: 'https://www.zhihu.com/', color: '#0084FF' },
-  { name: '微博', url: 'https://weibo.com/', color: '#E6162D' },
-  { name: '豆瓣', url: 'https://www.douban.com/', color: '#00B51D' },
-  { name: 'CSDN', url: 'https://www.csdn.net/', color: '#FF6A00' },
-  { name: 'B站', url: 'https://www.bilibili.com/', color: '#FB7299' },
-  { name: '新闻', url: 'https://newsnow.busiyi.world/', color: '#00C4B6' },
-  { name: '设置', url: '#settings', color: '#6B7280' },
-]
-
-onMounted(async () => {
-  await loadScripts()
-  checkHash()
-  window.addEventListener('hashchange', checkHash)
+const categories = computed(() => {
+  if (!catalog.value) return ['全部']
+  const set = new Set<string>()
+  catalog.value.sources.forEach((s) => {
+    if (s.category) set.add(s.category)
+  })
+  return ['全部', ...Array.from(set).sort()]
 })
 
-const checkHash = () => {
-  if (window.location.hash === '#settings') {
-    currentView.value = 'settings'
-  }
-}
-
-const loadScripts = async () => {
-  try {
-    const list = await invoke<ScriptItem[]>('list_scripts')
-    scripts.value = list
-  } catch (e) {
-    console.error('加载脚本失败:', e)
-  }
-}
-
-const navigate = async (url: string) => {
-  try {
-    await invoke('navigate_to_url', { url })
-  } catch (e) {
-    console.error('导航失败:', e)
-    window.location.href = url
-  }
-}
-
-const handleSearch = () => {
-  const query = searchQuery.value.trim()
-  if (!query) return
-
-  let url = query
-  if (!url.startsWith('http')) {
-    if (url.includes('.') && !url.includes(' ')) {
-      url = 'https://' + url
-    } else {
-      url = 'https://www.baidu.com/s?wd=' + encodeURIComponent(url)
-    }
-  }
-  navigate(url)
-}
-
-const handleBookmarkClick = (item: typeof bookmarks[0]) => {
-  if (item.url === '#settings') {
-    currentView.value = 'settings'
-  } else {
-    navigate(item.url)
-  }
-}
-
-const goHome = () => {
-  currentView.value = 'home'
-  installError.value = ''
-  installSuccess.value = ''
-}
-
-const toggleScript = async (script: ScriptItem) => {
-  try {
-    await invoke('toggle_script', { id: script.id, enabled: !script.enabled })
-    script.enabled = !script.enabled
-  } catch (e) {
-    console.error('切换脚本失败:', e)
-  }
-}
-
-const deleteScript = async (script: ScriptItem) => {
-  try {
-    await invoke('delete_script', { id: script.id })
-    await loadScripts()
-  } catch (e) {
-    console.error('删除脚本失败:', e)
-  }
-}
-
-const installFromUrl = async () => {
-  const url = scriptUrl.value.trim()
-  if (!url) return
-
-  installError.value = ''
-  installSuccess.value = ''
-
-  try {
-    await invoke('install_script_from_url', { url })
-    installSuccess.value = '脚本安装成功'
-    scriptUrl.value = ''
-    await loadScripts()
-  } catch (e) {
-    installError.value = '安装失败: ' + String(e)
-  }
-}
-
-const applicableSites = (script: ScriptItem) => {
-  const sites: string[] = []
-  script.matches.forEach((m) => {
-    if (m.startsWith('http')) {
-      try {
-        const url = new URL(m.replace(/\*/g, ''))
-        sites.push(url.origin + '/')
-      } catch {
-        sites.push(m)
-      }
-    } else if (m.includes('://')) {
-      sites.push(m)
-    }
+const filteredSources = computed(() => {
+  if (!catalog.value) return []
+  const query = searchQuery.value.trim().toLowerCase()
+  return catalog.value.sources.filter((s) => {
+    const matchCategory =
+      selectedCategory.value === '全部' || s.category === selectedCategory.value
+    const matchQuery =
+      !query ||
+      s.name.toLowerCase().includes(query) ||
+      (s.region?.toLowerCase().includes(query) ?? false) ||
+      (s.description?.toLowerCase().includes(query) ?? false)
+    return matchCategory && matchQuery
   })
-  return [...new Set(sites)]
+})
+
+function showToast(message: string) {
+  toast.value = message
+  setTimeout(() => {
+    toast.value = ''
+  }, 2500)
 }
 
-const openUrl = (url: string) => {
-  if (!url) return
-  let target = url
-  if (!target.startsWith('http')) {
-    target = 'https://' + target
+async function loadCatalog() {
+  try {
+    const data = await invoke<RadioCatalog>('get_radio_catalog')
+    catalog.value = data
+  } catch (e) {
+    console.error('加载目录失败:', e)
+    // 降级：尝试读取内置 JSON 并保存到本地
+    try {
+      const res = await fetch('/radio-catalog.json')
+      if (res.ok) {
+        const data = await res.json()
+        catalog.value = data
+        await invoke('save_radio_catalog', { catalog: data }).catch(() => {})
+      }
+    } catch (err) {
+      console.error('读取内置目录失败:', err)
+    }
   }
-  navigate(target)
 }
+
+async function loadFavorites() {
+  try {
+    const list = await invoke<string[]>('get_favorites')
+    favorites.value = new Set(list)
+  } catch (e) {
+    console.error('加载收藏失败:', e)
+  }
+}
+
+async function toggleFavorite(source: RadioSource) {
+  try {
+    const isFav = await invoke<boolean>('toggle_favorite', { id: source.id })
+    if (isFav) {
+      favorites.value.add(source.id)
+    } else {
+      favorites.value.delete(source.id)
+    }
+  } catch (e) {
+    console.error('切换收藏失败:', e)
+  }
+}
+
+async function updateCatalogFromUrl() {
+  const url = catalogUrl.value.trim()
+  if (!url) return
+  loading.value = true
+  try {
+    await invoke('update_radio_catalog_from_url', { url })
+    await loadCatalog()
+    catalogUrl.value = ''
+    showToast('目录更新成功')
+  } catch (e) {
+    showToast('更新失败: ' + String(e))
+  } finally {
+    loading.value = false
+  }
+}
+
+function triggerFileSelect() {
+  fileInput.value?.click()
+}
+
+async function onFileSelected(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  try {
+    const text = await file.text()
+    const data = JSON.parse(text) as RadioCatalog
+    await invoke('save_radio_catalog', { catalog: data })
+    await loadCatalog()
+    showToast('目录导入成功')
+  } catch (e) {
+    showToast('导入失败: ' + String(e))
+  } finally {
+    target.value = ''
+  }
+}
+
+function handlePlay(source: RadioSource) {
+  if (currentSource.value?.id === source.id && state.value === 'playing') {
+    togglePlay()
+  } else {
+    play(source)
+    invoke('add_play_history', { id: source.id }).catch(() => {})
+  }
+}
+
+onMounted(() => {
+  loadCatalog()
+  loadFavorites()
+})
 </script>
 
 <template>
   <div class="app">
-    <div v-if="currentView === 'home'" class="home">
-      <div class="logo-section">
-        <div class="logo">
-          <span class="logo-icon">🌐</span>
-          <span class="logo-text">WebWrapper</span>
-        </div>
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon">📻</span>
+        <span class="brand-text">TingFM Radio</span>
       </div>
-
-      <div class="search-section">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="输入网址或搜索内容..."
-            @keydown.enter="handleSearch"
-            class="search-input"
-          />
-          <button @click="handleSearch" class="search-btn">搜索</button>
-        </div>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="搜索电台..."
+          @keydown.enter="searchQuery = searchQuery.trim()"
+        />
       </div>
+      <button class="settings-btn" @click="currentView = 'settings'">⚙️</button>
+    </header>
 
-      <div class="bookmarks-section">
-        <div class="grid">
-          <div
-            v-for="item in bookmarks"
-            :key="item.name"
-            @click="handleBookmarkClick(item)"
-            class="bookmark-item"
+    <main class="main-content">
+      <div v-if="currentView === 'home'" class="home-view">
+        <div class="category-bar">
+          <button
+            v-for="cat in categories"
+            :key="cat"
+            class="category-chip"
+            :class="{ active: selectedCategory === cat }"
+            @click="selectedCategory = cat"
           >
-            <div class="bookmark-icon" :style="{ backgroundColor: item.color }">
-              <span>{{ item.name.charAt(0) }}</span>
+            {{ cat }}
+          </button>
+        </div>
+
+        <div v-if="!catalog" class="loading-state">
+          <p>正在加载电台目录...</p>
+        </div>
+
+        <div v-else-if="filteredSources.length === 0" class="empty-state">
+          <p>没有找到匹配的电台</p>
+        </div>
+
+        <div v-else class="source-grid">
+          <div
+            v-for="source in filteredSources"
+            :key="source.id"
+            class="source-card"
+            :class="{ playing: currentSource?.id === source.id }"
+          >
+            <div class="card-cover">
+              <img
+                v-if="source.logo"
+                :src="source.logo"
+                :alt="source.name"
+                @error="($event.target as HTMLImageElement).style.display = 'none'"
+              />
+              <div v-else class="cover-fallback">📻</div>
+              <button class="play-overlay" @click="handlePlay(source)">
+                {{ currentSource?.id === source.id && state === 'playing' ? '⏸' : '▶' }}
+              </button>
             </div>
-            <span class="bookmark-name">{{ item.name }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer">
-        <span>支持油猴脚本 | 自定义浏览器</span>
-      </div>
-    </div>
-
-    <div v-else class="settings">
-      <div class="settings-header">
-        <button @click="goHome" class="back-btn">←</button>
-        <h2>设置</h2>
-        <div class="spacer"></div>
-      </div>
-
-      <div class="settings-content">
-        <div class="section">
-          <h3>从 URL 安装脚本</h3>
-          <div class="install-box">
-            <input
-              v-model="scriptUrl"
-              type="text"
-              placeholder="输入 .user.js 脚本 URL..."
-              @keydown.enter="installFromUrl"
-              class="install-input"
-            />
-            <button @click="installFromUrl" class="install-btn">安装</button>
-          </div>
-          <p v-if="installError" class="message error">{{ installError }}</p>
-          <p v-if="installSuccess" class="message success">{{ installSuccess }}</p>
-        </div>
-
-        <div class="section">
-          <h3>脚本管理</h3>
-          <div v-if="scripts.length === 0" class="empty-state">
-            <span>暂无脚本，可从上方 URL 安装或访问网站自动匹配已安装脚本</span>
-          </div>
-          <div v-else class="script-list">
-            <div
-              v-for="script in scripts"
-              :key="script.id"
-              class="script-item"
+            <div class="card-info">
+              <h3 class="card-title">{{ source.name }}</h3>
+              <p class="card-meta">
+                <span v-if="source.category">{{ source.category }}</span>
+                <span v-if="source.region">{{ source.region }}</span>
+              </p>
+              <p v-if="source.description" class="card-desc">{{ source.description }}</p>
+            </div>
+            <button
+              class="favorite-btn"
+              :class="{ active: favorites.has(source.id) }"
+              @click="toggleFavorite(source)"
             >
-              <div class="script-info">
-                <img
-                  v-if="script.icon"
-                  :src="script.icon"
-                  class="script-icon"
-                  alt="icon"
-                  @error="($event.target as HTMLImageElement).style.display='none'"
-                />
-                <div v-else class="script-icon script-icon-fallback">📜</div>
-                <div class="script-detail">
-                  <div class="script-title">
-                    <span class="script-name">{{ script.name }}</span>
-                    <span class="script-version">v{{ script.version }}</span>
-                  </div>
-                  <div class="script-links">
-                    <a
-                      v-if="script.homepage"
-                      :href="script.homepage"
-                      target="_blank"
-                      class="script-link"
-                      @click.prevent="openUrl(script.homepage)"
-                    >脚本主页</a>
-                    <span v-if="applicableSites(script).length" class="script-sites">
-                      适用站点:
-                      <a
-                        v-for="site in applicableSites(script).slice(0, 3)"
-                        :key="site"
-                        class="script-link"
-                        @click.prevent="openUrl(site)"
-                      >{{ site }}</a>
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div class="script-actions">
-                <label class="toggle">
-                  <input type="checkbox" :checked="script.enabled" @change="toggleScript(script)" />
-                  <span class="slider"></span>
-                </label>
-                <button class="delete-btn" @click="deleteScript(script)">🗑</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <h3>关于</h3>
-          <div class="about-info">
-            <p>WebWrapper v1.0.0</p>
-            <p>基于 Tauri 2 构建</p>
-            <p>支持油猴脚本注入</p>
+              {{ favorites.has(source.id) ? '❤️' : '🤍' }}
+            </button>
           </div>
         </div>
       </div>
-    </div>
+
+      <div v-else class="settings-view">
+        <div class="settings-header">
+          <button class="back-btn" @click="currentView = 'home'">←</button>
+          <h2>设置</h2>
+          <div class="spacer"></div>
+        </div>
+
+        <div class="settings-content">
+          <section class="section">
+            <h3>更新电台目录</h3>
+            <div class="input-row">
+              <input
+                v-model="catalogUrl"
+                type="text"
+                placeholder="输入目录 JSON 地址..."
+                @keydown.enter="updateCatalogFromUrl"
+              />
+              <button :disabled="loading" @click="updateCatalogFromUrl">
+                {{ loading ? '更新中...' : '更新' }}
+              </button>
+            </div>
+            <button class="secondary-btn" @click="triggerFileSelect">
+              从本地 JSON 文件导入
+            </button>
+            <input
+              ref="fileInput"
+              type="file"
+              accept=".json,application/json"
+              style="display: none"
+              @change="onFileSelected"
+            />
+          </section>
+
+          <section class="section">
+            <h3>关于</h3>
+            <div class="about-card">
+              <p><strong>TingFM Radio</strong></p>
+              <p>基于 Tauri 2 + Vue 3 构建</p>
+              <p>目录版本: {{ catalog?.version ?? '未加载' }}</p>
+              <p>电台数量: {{ catalog?.sources.length ?? 0 }}</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer v-if="currentView === 'home'" class="player-bar">
+      <div class="player-info">
+        <div class="player-cover">
+          <img
+            v-if="currentSource?.logo"
+            :src="currentSource.logo"
+            :alt="currentSource.name"
+          />
+          <div v-else class="player-cover-fallback">📻</div>
+        </div>
+        <div class="player-text">
+          <p class="player-name">{{ currentSource?.name || '未在播放' }}</p>
+          <p class="player-status">
+            <span v-if="errorMessage" class="error">{{ errorMessage }}</span>
+            <span v-else-if="state === 'loading'">加载中...</span>
+            <span v-else-if="state === 'playing'">正在播放</span>
+            <span v-else-if="state === 'paused'">已暂停</span>
+            <span v-else>选择电台开始收听</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="player-controls">
+        <button class="control-btn" :disabled="!currentSource" @click="togglePlay">
+          {{ state === 'playing' ? '⏸' : '▶' }}
+        </button>
+        <button class="control-btn" :disabled="!currentSource" @click="stop">⏹</button>
+      </div>
+
+      <div class="player-volume">
+        <span>🔊</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          :value="volume"
+          @input="setVolume(Number(($event.target as HTMLInputElement).value))"
+        />
+      </div>
+    </footer>
+
+    <div v-if="toast" class="toast">{{ toast }}</div>
   </div>
 </template>
 
 <style scoped>
 .app {
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-}
-
-.home {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 60px 20px;
-  padding-top: max(60px, env(safe-area-inset-top));
+  height: 100vh;
+  height: 100dvh;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
 }
 
-.logo-section {
-  margin-bottom: 40px;
-}
-
-.logo {
+.app-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 28px;
+  gap: 16px;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
-.logo-icon {
-  font-size: 36px;
+.brand-icon {
+  font-size: 24px;
 }
 
-.logo-text {
-  background: linear-gradient(90deg, #00d4ff, #7c5afc);
+.brand-text {
+  background: linear-gradient(90deg, #00d4ff, #a855f7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.search-section {
-  width: 100%;
-  max-width: 600px;
-  margin-bottom: 40px;
-}
-
 .search-box {
+  flex: 1;
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 8px 16px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 8px 14px;
+  max-width: 420px;
 }
 
-.search-icon {
-  font-size: 18px;
-  margin-right: 12px;
-}
-
-.search-input {
+.search-box input {
   flex: 1;
   background: transparent;
   border: none;
   outline: none;
   color: #fff;
-  font-size: 16px;
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.search-btn {
-  background: linear-gradient(90deg, #00d4ff, #7c5afc);
-  border: none;
-  color: #fff;
-  padding: 8px 20px;
-  border-radius: 8px;
-  cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
 }
 
-.bookmarks-section {
-  width: 100%;
-  max-width: 600px;
+.search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 20px;
-}
-
-.bookmark-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.settings-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 18px;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
-  padding: 12px;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.bookmark-item:hover {
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.home-view {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.category-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.category-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.category-chip:hover,
+.category-chip.active {
+  background: linear-gradient(90deg, #00d4ff, #a855f7);
+  border-color: transparent;
+  color: #fff;
+}
+
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  padding-bottom: 100px;
+}
+
+.source-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 14px;
+  transition: all 0.2s;
+}
+
+.source-card:hover {
   background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.05);
+  transform: translateY(-2px);
 }
 
-.bookmark-icon {
-  width: 48px;
-  height: 48px;
+.source-card.playing {
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 1px #00d4ff;
+}
+
+.card-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
   border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  margin-bottom: 12px;
+}
+
+.card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-fallback {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 48px;
+}
+
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
   color: #fff;
-  font-size: 20px;
+  font-size: 36px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.source-card:hover .play-overlay {
+  opacity: 1;
+}
+
+.card-info {
+  min-width: 0;
+}
+
+.card-title {
+  margin: 0 0 6px;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.bookmark-name {
+.card-meta {
+  margin: 0 0 6px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  text-align: center;
+  color: rgba(255, 255, 255, 0.55);
+  display: flex;
+  gap: 8px;
 }
 
-.footer {
-  margin-top: 60px;
-  color: rgba(255, 255, 255, 0.5);
+.card-desc {
+  margin: 0;
   font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.settings {
-  min-height: 100vh;
-  min-height: 100dvh;
-  padding-top: env(safe-area-inset-top);
+.favorite-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.settings-view {
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .settings-header {
   display: flex;
   align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .back-btn {
   width: 36px;
   height: 36px;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 18px;
 }
 
 .settings-header h2 {
   flex: 1;
-  text-align: center;
   margin: 0;
   font-size: 18px;
+  text-align: center;
 }
 
 .spacer {
@@ -471,253 +598,207 @@ const openUrl = (url: string) => {
 }
 
 .settings-content {
-  padding: 24px;
-}
-
-.section {
-  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .section h3 {
+  margin: 0 0 12px;
   font-size: 14px;
   color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 16px;
 }
 
-.install-box {
+.input-row {
   display: flex;
   gap: 12px;
+  margin-bottom: 12px;
 }
 
-.install-input {
+.input-row input {
   flex: 1;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 12px 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
-  font-size: 14px;
   outline: none;
 }
 
-.install-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+.input-row input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
-.install-btn {
-  background: linear-gradient(90deg, #00d4ff, #7c5afc);
+.input-row button,
+.secondary-btn {
+  padding: 12px 20px;
+  border-radius: 10px;
   border: none;
+  background: linear-gradient(90deg, #00d4ff, #a855f7);
   color: #fff;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
 }
 
-.message {
-  margin-top: 8px;
-  font-size: 13px;
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.message.error {
-  color: #ff6b6b;
-}
-
-.message.success {
-  color: #51cf66;
-}
-
-.empty-state {
-  background: rgba(255, 255, 255, 0.05);
+.about-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
+  padding: 16px;
+  color: rgba(255, 255, 255, 0.75);
 }
 
-.script-list {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  overflow: hidden;
+.about-card p {
+  margin: 6px 0;
 }
 
-.script-item {
+.player-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 16px;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
-.script-item:last-child {
-  border-bottom: none;
-}
-
-.script-info {
+.player-info {
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
+  flex: 1;
 }
 
-.script-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  object-fit: contain;
+.player-cover,
+.player-cover-fallback {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
-.script-icon-fallback {
+.player-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-cover-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 24px;
 }
 
-.script-detail {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 4px;
-}
-
-.script-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.player-text {
   min-width: 0;
 }
 
-.script-name {
-  font-size: 14px;
-  font-weight: 500;
+.player-name {
+  margin: 0 0 4px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.script-version {
+.player-status {
+  margin: 0;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.55);
 }
 
-.script-links {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-
-.script-sites {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.script-link {
-  font-size: 12px;
-  color: #00d4ff;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.script-link:hover {
-  text-decoration: underline;
-}
-
-.script-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.delete-btn {
-  background: transparent;
-  border: none;
+.player-status .error {
   color: #ff6b6b;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 4px;
 }
 
-.toggle {
-  position: relative;
-  width: 48px;
-  height: 24px;
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 24px;
-  transition: 0.3s;
-}
-
-.slider:before {
-  position: absolute;
-  content: '';
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background: #fff;
+.control-btn {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  transition: 0.3s;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-input:checked + .slider {
-  background: linear-gradient(90deg, #00d4ff, #7c5afc);
+.control-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-input:checked + .slider:before {
-  transform: translateX(24px);
+.player-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 140px;
+  flex-shrink: 0;
 }
 
-.about-info {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 16px;
+.player-volume input {
+  flex: 1;
 }
 
-.about-info p {
-  margin: 8px 0;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  z-index: 1000;
+  pointer-events: none;
 }
 
-@media (max-width: 480px) {
-  .grid {
-    grid-template-columns: repeat(4, 1fr);
+@media (max-width: 640px) {
+  .app-header {
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .brand-text {
+    display: none;
+  }
+
+  .search-box {
+    max-width: none;
+  }
+
+  .source-grid {
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
 
-  .home {
-    padding: 40px 16px;
+  .player-bar {
+    flex-wrap: wrap;
+    padding: 10px 14px;
   }
 
-  .install-box {
-    flex-direction: column;
+  .player-volume {
+    width: 100%;
   }
 }
 </style>

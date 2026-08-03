@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "WebWrapper",
+  "productName": "TingFM Radio",
   "version": "1.0.0",
-  "identifier": "com.example.webwrapper",
+  "identifier": "com.example.tingfm-radio",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -10,7 +10,7 @@
   },
   "app": {
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://* http://ipc.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*; style-src 'self' 'unsafe-inline' https://*",
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' https://* data: blob:; media-src 'self' https://* http://* blob:; connect-src 'self' https://* http://* http://ipc.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*; style-src 'self' 'unsafe-inline' https://*",
       "capabilities": ["default"]
     }
   },

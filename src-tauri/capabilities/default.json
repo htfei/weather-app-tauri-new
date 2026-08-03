@@ -1,7 +1,7 @@
 {
   "$schema": "../schema.json",
   "identifier": "default",
-  "description": "Default permissions for WebWrapper",
+  "description": "Default permissions for TingFM Radio",
   "version": "1.0.0",
   "windows": ["main"],
   "permissions": [
@@ -10,17 +10,13 @@
   ],
   "commands": {
     "allow": [
-      "navigate_to_url",
-      "install_script",
-      "install_script_from_url",
-      "list_scripts",
-      "toggle_script",
-      "delete_script",
-      "find_scripts_for_url",
-      "gm_storage_get",
-      "gm_storage_set",
-      "gm_storage_delete",
-      "gm_xhr_proxy"
+      "get_radio_catalog",
+      "update_radio_catalog_from_url",
+      "save_radio_catalog",
+      "toggle_favorite",
+      "get_favorites",
+      "add_play_history",
+      "proxy_stream_url"
     ]
   }
 }

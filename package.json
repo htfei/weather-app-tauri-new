@@ -1,5 +1,5 @@
 {
-  "name": "web-wrapper-app",
+  "name": "tingfm-radio",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -11,12 +11,15 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
+    "hls.js": "^1.6.16",
     "vue": "^3.4.21"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",
     "@types/node": "^20.0.0",
     "@vitejs/plugin-vue": "^5.0.4",
+    "axios": "^1.19.0",
+    "cheerio": "^1.2.0",
     "typescript": "^5.4.2",
     "vite": "^5.2.8",
     "vue-tsc": "^2.0.6"

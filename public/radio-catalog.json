@@ -1,0 +1,907 @@
+{
+  "version": "0.0.1",
+  "platform": "TingFM",
+  "updatedAt": "2026-08-03T09:32:20.455Z",
+  "sources": [
+    {
+      "id": "tingfm_751",
+      "name": "广东股市广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2013/03/20151223205426417.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "经济",
+      "description": "广东 · 经济 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/63/radios/20488/index_20488.m3u8?type=1&key=b3392a0671c472aa7387cda6a4ec8c94&time=6a7042da",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_133",
+      "name": "佛山电台飞跃924",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20120820015038769.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "交通",
+      "description": "广东 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://radiopull.radiofoshan.com.cn/live/1400820947_BSID_42_audio.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_153",
+      "name": "怀集音乐之声",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20140616100853326.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "音乐",
+      "description": "广东 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/82/radios/22518/index_22518.m3u8?type=1&key=d2e2b751a979b20911eaccfc700bd6fe&time=6a703ffe",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_129",
+      "name": "佛山电台真爱946",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20170906095951.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "综合",
+      "description": "广东 · 综合 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://radiopull.radiofoshan.com.cn/live/1400820947_BSID_46_audio.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_18",
+      "name": "北京交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2022/07/oss-62d8c082059ca.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "北京",
+      "region": "交通",
+      "description": "北京 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://brtv-radiolive.rbc.cn/alive/fm1039.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_223",
+      "name": "上海动感101",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20140909123511693.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "上海",
+      "region": "音乐",
+      "description": "上海 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/64/radios/21311/index_21311.m3u8?type=1&key=374d1a88765a09738a59a8378308a659&time=6a702829",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_112",
+      "name": "广东音乐之声",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20180905101723.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "音乐",
+      "description": "广东 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/63/radios/20489/index_20489.m3u8?type=1&key=d9962448c546eb147802099df5b1c29b&time=6a704abe",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_132",
+      "name": "佛山电台千色985",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20170901051544.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "音乐",
+      "description": "广东 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://radiopull.radiofoshan.com.cn/live/1400820947_BSID_41_audio.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_117",
+      "name": "广东珠江经济广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20150209212831195.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "经济",
+      "description": "广东 · 经济 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/62/radios/20493/index_20493.m3u8?type=1&key=161e93c7638feaf8868618a9229ad7db&time=6a704c0f",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_114",
+      "name": "羊城交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/2016062715553137.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "交通",
+      "description": "广东 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/62/radios/20495/index_20495.m3u8?type=1&key=c2dfc0b74479a4948ddc0b7407785949&time=6a70166a",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_131",
+      "name": "佛山电台顺德901",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20170901053118.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "综合",
+      "description": "广东 · 综合 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://radiopull.radiofoshan.com.cn/live/1400820947_BSID_44_audio.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_490",
+      "name": "江苏经典流行音乐广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20170518065929.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "江苏",
+      "region": "音乐",
+      "description": "江苏 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://lzlive.vojs.cn/2wtSfrS/92/live.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_680",
+      "name": "年代965",
+      "logo": "https://oss-hk.fileget.net/tingfm/2013/02/20170511061032.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "网络电台",
+      "region": "音乐",
+      "description": "网络电台 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://lhttp.qtfm.cn/live/5022038/64k.mp3",
+          "format": "direct",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_58",
+      "name": "上海流行音乐LoveRadio",
+      "logo": "https://oss-hk.fileget.net/tingfm/2022/07/oss-62d8ecbb66e2c.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "上海",
+      "region": "音乐",
+      "description": "上海 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/64/radios/21313/index_21313.m3u8?type=1&key=36e9e07f687154220bfcfd84d4fe2059&time=6a702223",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_243",
+      "name": "河北音乐广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20151223210921313.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "河北",
+      "region": "音乐",
+      "description": "河北 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://radio.pull.hebtv.com/live/hebyy.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_3891",
+      "name": "清晨音乐台",
+      "logo": "https://oss-hk.fileget.net/tingfm/2018/09/20190602103738.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "网络电台",
+      "region": "音乐",
+      "description": "网络电台 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://live.ximalaya.com/radio-first-page-app/live/1011/64.m3u8?transcode=ts",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_738",
+      "name": "AsiaFM 亚洲粤语台",
+      "logo": "https://oss-hk.fileget.net/tingfm/2013/02/sync635fd6664718f.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "网络电台",
+      "region": "音乐",
+      "description": "网络电台 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://live.ximalaya.com/radio-first-page-app/live/999/64.m3u8?transcode=ts",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_15",
+      "name": "北京文艺广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2022/07/oss-62d8bfe226ac9.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "北京",
+      "region": "文艺",
+      "description": "北京 · 文艺 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://brtv-radiolive.rbc.cn/alive/fm876.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_118",
+      "name": "广东文体广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20160823034552.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "生活",
+      "description": "广东 · 生活 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/63/radios/20490/index_20490.m3u8?type=1&key=2fce98668f34768bd74edd2a967efd61&time=6a701498",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_794",
+      "name": "中山电台快乐888",
+      "logo": "https://oss-hk.fileget.net/tingfm/2013/04/20170811095134.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "生活",
+      "description": "广东 · 生活 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://live.ximalaya.com/radio-first-page-app/live/1191/64.m3u8?transcode=ts",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_119",
+      "name": "广州新闻资讯广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20120418041248385.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "新闻",
+      "description": "广东 · 新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/71/radios/20728/index_20728.m3u8?type=1&key=e708676e2937c60892e7bbd51e1af9b0&time=6a705fb4",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_224",
+      "name": "上海第一财经广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20150215161819375.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "上海",
+      "region": "经济",
+      "description": "上海 · 经济 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/60/radios/20370/index_20370.m3u8?type=1&key=e1c94519353df0ea8cfc4a4ca0f319f2&time=6a705fb7",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_446",
+      "name": "浙江音乐广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20180110105156.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "浙江",
+      "region": "音乐",
+      "description": "浙江 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/62/radios/20928/index_20928.m3u8?type=1&key=305cc3bc05740bdbb2d4095fa516a4e8&time=6a703626",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_978",
+      "name": "浙江经济广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2017/12/20150127142023329.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "浙江",
+      "region": "经济",
+      "description": "浙江 · 经济 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/61/radios/20460/index_20460.m3u8?type=1&key=011a915d384d5ac73db72011cde82ffe&time=6a701e52",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_137",
+      "name": "鹤山电台",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20150323103813782.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "综合",
+      "description": "广东 · 综合 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/57/radios/21464/index_21464.m3u8?type=1&key=702da3c35f039669ec64747bff5c1fcf&time=6a702155",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_17",
+      "name": "北京音乐广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2022/07/oss-62d8c01bc62dc.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "北京",
+      "region": "音乐",
+      "description": "北京 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://brtv-radiolive.rbc.cn/alive/fm974.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_372",
+      "name": "呼伦贝尔蒙语广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/file61343721d1ee7.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "内蒙古",
+      "region": "新闻",
+      "description": "内蒙古 · 新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/70/radios/20583/index_20583.m3u8?type=1&key=973d4b8d353286235800408004bef404&time=6a700fe1",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_790",
+      "name": "广州交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2013/04/20160412212622806.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "交通",
+      "description": "广东 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/71/radios/20731/index_20731.m3u8?type=1&key=67922a075ca7b27e029a9dce54eb1367&time=6a704297",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_426",
+      "name": "黑龙江交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20160425160830931.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "黑龙江",
+      "region": "交通",
+      "description": "黑龙江 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/70/radios/20557/index_20557.m3u8?type=1&key=5f28d8952fbb395f3437c49c55cb86f4&time=6a7029a6",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_449",
+      "name": "浙江交通之声",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20170308040533.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "浙江",
+      "region": "交通",
+      "description": "浙江 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ali-m-l.cztv.com/channels/lantian/fm93/128k.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_246",
+      "name": "河北交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20170411011252.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "河北",
+      "region": "交通",
+      "description": "河北 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://radio.pull.hebtv.com/live/hebjt.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_791",
+      "name": "广州青少年广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2013/04/20161208013243.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "音乐",
+      "description": "广东 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/71/radios/20729/index_20729.m3u8?type=1&key=c4bb39895be51c6b7b8bd7ba98284bfc&time=6a70431c",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_51",
+      "name": "上海新闻广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2022/07/oss-62d8ebfb8d417.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "上海",
+      "region": "新闻",
+      "description": "上海 · 新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/78/radios/20849/index_20849.m3u8?type=1&key=4669452b2cc264f9a0ee36fec64599b3&time=6a705fd5",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_488",
+      "name": "江苏交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20140330112149744.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "江苏",
+      "region": "交通",
+      "description": "江苏 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://lzlive.vojs.cn/4TaHTeL/92/live.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_134",
+      "name": "佛山电台高明台883",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20170906095814.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "综合",
+      "description": "广东 · 综合 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://radiopull.radiofoshan.com.cn/live/1400820947_BSID_43_audio.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_120",
+      "name": "深圳新闻广播先锋898",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/1270.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "新闻",
+      "description": "广东 · 新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://lhttp.qtfm.cn/live/1270/64k.mp3",
+          "format": "direct",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_789",
+      "name": "广州金曲音乐广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2013/04/20170411122342.gif?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "音乐",
+      "description": "广东 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/71/radios/20730/index_20730.m3u8?type=1&key=48a4eb8143c565ae96979e0e14be0aeb&time=6a701a9d",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_241",
+      "name": "湖北楚天交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/1291.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "湖北",
+      "region": "交通",
+      "description": "湖北 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://satellitepull.cnr.cn/live/wx32hubctjtgb/playlist.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_22",
+      "name": "北京体育广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2022/07/oss-62d8c1c4799ed.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "北京",
+      "region": "Sports",
+      "description": "北京 · Sports - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://brtv-radiolive.rbc.cn/alive/fm1025.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_14",
+      "name": "北京新闻广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2022/07/oss-62d8bfcf3426a.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "北京",
+      "region": "新闻",
+      "description": "北京 · 新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://brtv-radiolive.rbc.cn/alive/fm945.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_486",
+      "name": "江苏新闻广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/4944.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "江苏",
+      "region": "新闻",
+      "description": "江苏 · 新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://lzlive.vojs.cn/5Fo8mMX/92/live.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_242",
+      "name": "河北新闻广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20140616053545367.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "河北",
+      "region": "新闻",
+      "description": "河北 · 新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://radio.pull.hebtv.com/live/hebxw.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_113",
+      "name": "广东城市之声",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20170118040029.jpeg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "生活",
+      "description": "广东 · 生活 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/63/radios/20491/index_20491.m3u8?type=1&key=5f3f520be557d92acc8b8b2685c71b42&time=6a701dfe",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_1269",
+      "name": "AsiaFM 亚洲经典台",
+      "logo": "https://oss-hk.fileget.net/tingfm/2018/07/20150909150100154.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "网络电台",
+      "region": "音乐",
+      "description": "网络电台 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://live.ximalaya.com/radio-first-page-app/live/1005/64.m3u8?transcode=ts",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_1008",
+      "name": "青岛音乐广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2022/07/oss-62d8b82d6a880.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "山东",
+      "region": "音乐",
+      "description": "山东 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://hlspull.qtv.com.cn/gwepn2sr/channel/2b2d8edc7696d389074c963d0171f34c/index.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_121",
+      "name": "深圳音乐广播飞扬971",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20140330113445384.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "音乐",
+      "description": "广东 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://satellitepull.cnr.cn/live/wxszfy971/playlist.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_136",
+      "name": "江门旅游音乐广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/1283.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "音乐",
+      "description": "广东 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/72/radios/21986/index_21986.m3u8?type=1&key=b402a567a1021efca58a49c889f28f7d&time=6a704d7d",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_535",
+      "name": "苏州交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20120711011249856.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "江苏",
+      "region": "交通",
+      "description": "江苏 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/70/radios/20698/index_20698.m3u8?type=1&key=385c10f9fbc3b3e67b370beb29d13802&time=6a7036f9",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_111",
+      "name": "广东新闻广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20160115145853329.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "新闻",
+      "description": "广东 · 新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://satellitepull.cnr.cn/live/wxgdxwgb/playlist.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_183",
+      "name": "广西970女主播（经济）",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20150326113522239.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广西",
+      "region": "经济",
+      "description": "广西 · 经济 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://stream.bbrtv.com:10443/hls/wrr24LJGR/wrr24LJGR_live.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_717",
+      "name": "广西音乐广播（文艺）",
+      "logo": "https://oss-hk.fileget.net/tingfm/2013/02/20150225111148873.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广西",
+      "region": "音乐",
+      "description": "广西 · 音乐 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://stream.bbrtv.com:10443/hls/rCjJ4Y1MR/rCjJ4Y1MR_live.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_711",
+      "name": "辽宁之声新闻综合广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2013/02/20160414110627181.png?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "辽宁",
+      "region": "新闻",
+      "description": "辽宁 · 新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/61/radios/20440/index_20440.m3u8?type=1&key=87fc9e00341cfee8fd9e5509c1b14f02&time=6a7027ba",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_589",
+      "name": "河南交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/1209.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "河南",
+      "region": "交通",
+      "description": "河南 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://stream.hndt.com/live/jiaotong/playlist.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_144",
+      "name": "潮州戏曲广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20150427150246450.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "戏曲",
+      "description": "广东 · 戏曲 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/79/radios/22254/index_22254.m3u8?type=1&key=e4442285a6c7360d496735b2e41aedf1&time=6a704d92",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_122",
+      "name": "深圳交通广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/11/20151207195702947.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广东",
+      "region": "交通",
+      "description": "广东 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://satellitepull.cnr.cn/live/wxszjjpl/playlist.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_21",
+      "name": "北京城市广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2022/07/oss-62d8c1afbf979.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "北京",
+      "region": "生活",
+      "description": "北京 · 生活 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://brtv-radiolive.rbc.cn/alive/fm1073.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_558",
+      "name": "大连体育广播",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/1085.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "辽宁",
+      "region": "辽宁",
+      "description": "辽宁 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/84/radios/20820/index_20820.m3u8?type=1&key=b9265e3add3915900ee1980a1bb3b964&time=6a706018",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_306",
+      "name": "长春交通之声",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/20120821104235396.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "吉林",
+      "region": "交通",
+      "description": "吉林 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://ytcast.radio.cn/83/radios/20832/index_20832.m3u8?type=1&key=bd2d589b5ba55f339c685a7aa0ef3cbb&time=6a700c7f",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_697",
+      "name": "CGTN Radio",
+      "logo": "https://oss-hk.fileget.net/tingfm/2023/03/oss-640954a407aac.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "新闻",
+      "region": "新闻",
+      "description": "新闻 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://sk.cri.cn/am846.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tingfm_185",
+      "name": "广西教育广播（私家车）",
+      "logo": "https://oss-hk.fileget.net/tingfm/2012/12/1756.jpg?x-oss-process=image/resize,m_fill,w_200,h_200",
+      "category": "广西",
+      "region": "交通",
+      "description": "广西 · 交通 - TingFM 在线广播",
+      "streams": [
+        {
+          "url": "https://stream.bbrtv.com:10443/hls/I7LJVL1Gg/I7LJVL1Gg_live.m3u8",
+          "format": "hls",
+          "quality": "standard"
+        }
+      ]
+    }
+  ]
+}
