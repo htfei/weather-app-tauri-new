@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import type { RadioCatalog, RadioSource } from './types/radio'
 import { useRadioPlayer } from './composables/useRadioPlayer'
@@ -8,52 +8,97 @@ const {
   currentSource,
   state,
   errorMessage,
-  volume,
   play,
   togglePlay,
   stop,
-  setVolume,
 } = useRadioPlayer()
 
 const catalog = ref<RadioCatalog | null>(null)
 const favorites = ref<Set<string>>(new Set())
-const searchQuery = ref('')
-const selectedCategory = ref('全部')
-const loading = ref(false)
-const currentView = ref<'home' | 'settings'>('home')
-const catalogUrl = ref('')
-const fileInput = ref<HTMLInputElement | null>(null)
-const toast = ref('')
+const currentCategory = ref('全部')
+const currentIndex = ref(0)
+const showCategoryPicker = ref(false)
+const showTimerPicker = ref(false)
+const showSkinPicker = ref(false)
+const currentSkin = ref<'wood' | 'transistor' | 'tube'>('wood')
+const timerEndAt = ref<number | null>(null)
+const timerDisplay = ref('')
+let timerInterval: ReturnType<typeof setInterval> | null = null
+
+const skins = [
+  { id: 'wood', name: '复古木纹' },
+  { id: 'transistor', name: '晶体管' },
+  { id: 'tube', name: '电子管' },
+] as const
 
 const categories = computed(() => {
   if (!catalog.value) return ['全部']
   const set = new Set<string>()
   catalog.value.sources.forEach((s) => {
-    if (s.category) set.add(s.category)
+    if (s.region) set.add(s.region)
   })
   return ['全部', ...Array.from(set).sort()]
 })
 
 const filteredSources = computed(() => {
   if (!catalog.value) return []
-  const query = searchQuery.value.trim().toLowerCase()
-  return catalog.value.sources.filter((s) => {
-    const matchCategory =
-      selectedCategory.value === '全部' || s.category === selectedCategory.value
-    const matchQuery =
-      !query ||
-      s.name.toLowerCase().includes(query) ||
-      (s.region?.toLowerCase().includes(query) ?? false) ||
-      (s.description?.toLowerCase().includes(query) ?? false)
-    return matchCategory && matchQuery
-  })
+  if (currentCategory.value === '全部') return catalog.value.sources
+  return catalog.value.sources.filter((s) => s.region === currentCategory.value)
 })
 
-function showToast(message: string) {
-  toast.value = message
-  setTimeout(() => {
-    toast.value = ''
-  }, 2500)
+const currentStation = computed<RadioSource | null>(() => {
+  const list = filteredSources.value
+  if (!list.length) return null
+  const idx = Math.max(0, Math.min(currentIndex.value, list.length - 1))
+  return list[idx]
+})
+
+const isFavorite = computed(() => {
+  return currentStation.value ? favorites.value.has(currentStation.value.id) : false
+})
+
+const isPlaying = computed(() => state.value === 'playing')
+
+watch(currentCategory, () => {
+  currentIndex.value = 0
+  const station = currentStation.value
+  if (station) handlePlay(station)
+})
+
+function updateTimerDisplay() {
+  if (!timerEndAt.value) {
+    timerDisplay.value = ''
+    return
+  }
+  const diff = Math.max(0, timerEndAt.value - Date.now())
+  if (diff <= 0) {
+    timerDisplay.value = ''
+    return
+  }
+  const totalSeconds = Math.ceil(diff / 1000)
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  timerDisplay.value = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
+function startTimerInterval() {
+  stopTimerInterval()
+  updateTimerDisplay()
+  timerInterval = setInterval(() => {
+    updateTimerDisplay()
+    if (timerEndAt.value && Date.now() >= timerEndAt.value) {
+      stop()
+      timerEndAt.value = null
+      stopTimerInterval()
+    }
+  }, 1000)
+}
+
+function stopTimerInterval() {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
 }
 
 async function loadCatalog() {
@@ -61,8 +106,6 @@ async function loadCatalog() {
     const data = await invoke<RadioCatalog>('get_radio_catalog')
     catalog.value = data
   } catch (e) {
-    console.error('加载目录失败:', e)
-    // 降级：尝试读取内置 JSON 并保存到本地
     try {
       const res = await fetch('/radio-catalog.json')
       if (res.ok) {
@@ -71,7 +114,7 @@ async function loadCatalog() {
         await invoke('save_radio_catalog', { catalog: data }).catch(() => {})
       }
     } catch (err) {
-      console.error('读取内置目录失败:', err)
+      console.error('读取目录失败:', err)
     }
   }
 }
@@ -85,720 +128,741 @@ async function loadFavorites() {
   }
 }
 
-async function toggleFavorite(source: RadioSource) {
+async function toggleFavorite() {
+  const station = currentStation.value
+  if (!station) return
   try {
-    const isFav = await invoke<boolean>('toggle_favorite', { id: source.id })
-    if (isFav) {
-      favorites.value.add(source.id)
-    } else {
-      favorites.value.delete(source.id)
-    }
+    const isFav = await invoke<boolean>('toggle_favorite', { id: station.id })
+    if (isFav) favorites.value.add(station.id)
+    else favorites.value.delete(station.id)
   } catch (e) {
     console.error('切换收藏失败:', e)
   }
 }
 
-async function updateCatalogFromUrl() {
-  const url = catalogUrl.value.trim()
-  if (!url) return
-  loading.value = true
-  try {
-    await invoke('update_radio_catalog_from_url', { url })
-    await loadCatalog()
-    catalogUrl.value = ''
-    showToast('目录更新成功')
-  } catch (e) {
-    showToast('更新失败: ' + String(e))
-  } finally {
-    loading.value = false
-  }
-}
-
-function triggerFileSelect() {
-  fileInput.value?.click()
-}
-
-async function onFileSelected(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
-
-  try {
-    const text = await file.text()
-    const data = JSON.parse(text) as RadioCatalog
-    await invoke('save_radio_catalog', { catalog: data })
-    await loadCatalog()
-    showToast('目录导入成功')
-  } catch (e) {
-    showToast('导入失败: ' + String(e))
-  } finally {
-    target.value = ''
-  }
-}
-
-function handlePlay(source: RadioSource) {
-  if (currentSource.value?.id === source.id && state.value === 'playing') {
+function handlePlay(station: RadioSource) {
+  if (currentSource.value?.id === station.id && isPlaying.value) {
     togglePlay()
   } else {
-    play(source)
-    invoke('add_play_history', { id: source.id }).catch(() => {})
+    play(station)
+    invoke('add_play_history', { id: station.id }).catch(() => {})
   }
+}
+
+function nextStation() {
+  const list = filteredSources.value
+  if (!list.length) return
+  currentIndex.value = (currentIndex.value + 1) % list.length
+  handlePlay(currentStation.value!)
+}
+
+function prevStation() {
+  const list = filteredSources.value
+  if (!list.length) return
+  currentIndex.value = (currentIndex.value - 1 + list.length) % list.length
+  handlePlay(currentStation.value!)
+}
+
+function selectCategory(cat: string) {
+  currentCategory.value = cat
+  showCategoryPicker.value = false
+}
+
+function setTimer(minutes: number) {
+  if (minutes <= 0) {
+    timerEndAt.value = null
+    stopTimerInterval()
+    showTimerPicker.value = false
+    return
+  }
+  timerEndAt.value = Date.now() + minutes * 60 * 1000
+  startTimerInterval()
+  showTimerPicker.value = false
+}
+
+function selectSkin(skin: 'wood' | 'transistor' | 'tube') {
+  currentSkin.value = skin
+  showSkinPicker.value = false
+}
+
+function onTunerClick(event: MouseEvent) {
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const center = rect.width / 2
+  if (x < center) prevStation()
+  else nextStation()
 }
 
 onMounted(() => {
   loadCatalog()
   loadFavorites()
 })
+
+onUnmounted(() => {
+  stopTimerInterval()
+})
 </script>
 
 <template>
-  <div class="app">
+  <div class="radio-app" :data-skin="currentSkin">
     <header class="app-header">
-      <div class="brand">
-        <span class="brand-icon">📻</span>
-        <span class="brand-text">TingFM Radio</span>
-      </div>
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="搜索电台..."
-          @keydown.enter="searchQuery = searchQuery.trim()"
-        />
-      </div>
-      <button class="settings-btn" @click="currentView = 'settings'">⚙️</button>
+      <div class="brand-mark">📻</div>
+      <button class="skin-btn" @click="showSkinPicker = true">
+        <span class="skin-icon">🎨</span>
+        <span class="skin-name">{{ skins.find((s) => s.id === currentSkin)?.name }}</span>
+      </button>
     </header>
 
-    <main class="main-content">
-      <div v-if="currentView === 'home'" class="home-view">
-        <div class="category-bar">
-          <button
-            v-for="cat in categories"
-            :key="cat"
-            class="category-chip"
-            :class="{ active: selectedCategory === cat }"
-            @click="selectedCategory = cat"
-          >
-            {{ cat }}
-          </button>
-        </div>
+    <main class="main-stage">
+      <div v-if="!catalog" class="loading-text">加载中...</div>
+      <div v-else-if="!currentStation" class="empty-text">暂无电台</div>
 
-        <div v-if="!catalog" class="loading-state">
-          <p>正在加载电台目录...</p>
-        </div>
+      <div v-else class="station-card" :class="{ playing: isPlaying }">
+        <div class="card-screw screw-tl"></div>
+        <div class="card-screw screw-tr"></div>
+        <div class="card-screw screw-bl"></div>
+        <div class="card-screw screw-br"></div>
 
-        <div v-else-if="filteredSources.length === 0" class="empty-state">
-          <p>没有找到匹配的电台</p>
-        </div>
-
-        <div v-else class="source-grid">
-          <div
-            v-for="source in filteredSources"
-            :key="source.id"
-            class="source-card"
-            :class="{ playing: currentSource?.id === source.id }"
-          >
-            <div class="card-cover">
-              <img
-                v-if="source.logo"
-                :src="source.logo"
-                :alt="source.name"
-                @error="($event.target as HTMLImageElement).style.display = 'none'"
-              />
-              <div v-else class="cover-fallback">📻</div>
-              <button class="play-overlay" @click="handlePlay(source)">
-                {{ currentSource?.id === source.id && state === 'playing' ? '⏸' : '▶' }}
-              </button>
-            </div>
-            <div class="card-info">
-              <h3 class="card-title">{{ source.name }}</h3>
-              <p class="card-meta">
-                <span v-if="source.category">{{ source.category }}</span>
-                <span v-if="source.region">{{ source.region }}</span>
-              </p>
-              <p v-if="source.description" class="card-desc">{{ source.description }}</p>
-            </div>
-            <button
-              class="favorite-btn"
-              :class="{ active: favorites.has(source.id) }"
-              @click="toggleFavorite(source)"
-            >
-              {{ favorites.has(source.id) ? '❤️' : '🤍' }}
-            </button>
+        <div class="tuner-window">
+          <div class="led-panel">
+            <span class="led" :class="{ on: isPlaying }"></span>
+            <span class="freq-text">{{ isPlaying ? 'ON AIR' : 'STANDBY' }}</span>
           </div>
         </div>
-      </div>
 
-      <div v-else class="settings-view">
-        <div class="settings-header">
-          <button class="back-btn" @click="currentView = 'home'">←</button>
-          <h2>设置</h2>
-          <div class="spacer"></div>
+        <div class="cover-area">
+          <div class="cover-frame">
+            <div class="cover-mask"></div>
+            <img
+              v-if="currentStation.logo"
+              :src="currentStation.logo"
+              :alt="currentStation.name"
+              @error="($event.target as HTMLImageElement).style.display = 'none'"
+            />
+            <div v-else class="cover-placeholder">📻</div>
+          </div>
         </div>
 
-        <div class="settings-content">
-          <section class="section">
-            <h3>更新电台目录</h3>
-            <div class="input-row">
-              <input
-                v-model="catalogUrl"
-                type="text"
-                placeholder="输入目录 JSON 地址..."
-                @keydown.enter="updateCatalogFromUrl"
-              />
-              <button :disabled="loading" @click="updateCatalogFromUrl">
-                {{ loading ? '更新中...' : '更新' }}
-              </button>
-            </div>
-            <button class="secondary-btn" @click="triggerFileSelect">
-              从本地 JSON 文件导入
-            </button>
-            <input
-              ref="fileInput"
-              type="file"
-              accept=".json,application/json"
-              style="display: none"
-              @change="onFileSelected"
-            />
-          </section>
-
-          <section class="section">
-            <h3>关于</h3>
-            <div class="about-card">
-              <p><strong>TingFM Radio</strong></p>
-              <p>基于 Tauri 2 + Vue 3 构建</p>
-              <p>目录版本: {{ catalog?.version ?? '未加载' }}</p>
-              <p>电台数量: {{ catalog?.sources.length ?? 0 }}</p>
-            </div>
-          </section>
+        <div class="info-area">
+          <h1 class="station-name">{{ currentStation.name }}</h1>
+          <p class="station-meta">
+            <span class="meta-chip">{{ currentStation.region }}</span>
+            <span v-if="currentStation.category" class="meta-chip secondary">{{ currentStation.category }}</span>
+          </p>
         </div>
       </div>
     </main>
 
-    <footer v-if="currentView === 'home'" class="player-bar">
-      <div class="player-info">
-        <div class="player-cover">
-          <img
-            v-if="currentSource?.logo"
-            :src="currentSource.logo"
-            :alt="currentSource.name"
-          />
-          <div v-else class="player-cover-fallback">📻</div>
+    <footer class="control-deck">
+      <div class="knobs-row">
+        <div class="knob-wrap">
+          <button class="physical-knob tuner-knob" @click="onTunerClick">
+            <div class="knob-top">
+              <div class="knob-marker"></div>
+            </div>
+            <div class="knob-side"></div>
+          </button>
+          <span class="knob-label">切台</span>
         </div>
-        <div class="player-text">
-          <p class="player-name">{{ currentSource?.name || '未在播放' }}</p>
-          <p class="player-status">
-            <span v-if="errorMessage" class="error">{{ errorMessage }}</span>
-            <span v-else-if="state === 'loading'">加载中...</span>
-            <span v-else-if="state === 'playing'">正在播放</span>
-            <span v-else-if="state === 'paused'">已暂停</span>
-            <span v-else>选择电台开始收听</span>
-          </p>
+
+        <div class="knob-wrap">
+          <button
+            class="physical-knob power-knob"
+            :class="{ playing: isPlaying }"
+            @click="currentStation && handlePlay(currentStation)"
+          >
+            <div class="knob-top">
+              <div class="knob-marker"></div>
+            </div>
+            <div class="knob-side"></div>
+          </button>
+          <span class="knob-label">电源</span>
         </div>
       </div>
 
-      <div class="player-controls">
-        <button class="control-btn" :disabled="!currentSource" @click="togglePlay">
-          {{ state === 'playing' ? '⏸' : '▶' }}
+      <div class="text-controls">
+        <button class="text-btn" :class="{ active: isFavorite }" @click="toggleFavorite">
+          <span>{{ isFavorite ? '已收藏' : '收藏' }}</span>
         </button>
-        <button class="control-btn" :disabled="!currentSource" @click="stop">⏹</button>
+        <button class="text-btn" :class="{ active: timerDisplay !== '' }" @click="showTimerPicker = true">
+          <span>{{ timerDisplay || '定时' }}</span>
+        </button>
+        <button class="text-btn" @click="showCategoryPicker = true">
+          <span>{{ currentCategory === '全部' ? '频道' : currentCategory }}</span>
+        </button>
       </div>
 
-      <div class="player-volume">
-        <span>🔊</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          :value="volume"
-          @input="setVolume(Number(($event.target as HTMLInputElement).value))"
-        />
-      </div>
+      <p v-if="errorMessage" class="error-hint">{{ errorMessage }}</p>
     </footer>
 
-    <div v-if="toast" class="toast">{{ toast }}</div>
+    <!-- 类别选择器 -->
+    <div v-if="showCategoryPicker" class="modal-overlay" @click.self="showCategoryPicker = false">
+      <div class="modal-panel retro-panel">
+        <h3 class="modal-title">选择频道</h3>
+        <div class="category-list">
+          <button
+            v-for="cat in categories"
+            :key="cat"
+            class="category-item"
+            :class="{ active: currentCategory === cat }"
+            @click="selectCategory(cat)"
+          >
+            {{ cat }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 定时选择器 -->
+    <div v-if="showTimerPicker" class="modal-overlay" @click.self="showTimerPicker = false">
+      <div class="modal-panel retro-panel">
+        <h3 class="modal-title">定时关闭</h3>
+        <div class="timer-list">
+          <button class="timer-item" @click="setTimer(15)">15 分钟</button>
+          <button class="timer-item" @click="setTimer(30)">30 分钟</button>
+          <button class="timer-item" @click="setTimer(60)">60 分钟</button>
+          <button class="timer-item" @click="setTimer(90)">90 分钟</button>
+          <button class="timer-item cancel" @click="setTimer(0)">取消定时</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 换肤选择器 -->
+    <div v-if="showSkinPicker" class="modal-overlay" @click.self="showSkinPicker = false">
+      <div class="modal-panel retro-panel">
+        <h3 class="modal-title">切换皮肤</h3>
+        <div class="skin-list">
+          <button
+            v-for="skin in skins"
+            :key="skin.id"
+            class="skin-item"
+            :class="{ active: currentSkin === skin.id }"
+            @click="selectSkin(skin.id)"
+          >
+            {{ skin.name }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.app {
+/* 主题变量 */
+.radio-app {
+  --bg-deep: #1a0f0a;
+  --bg-mid: #3d261b;
+  --card-bg: #f8ecd9;
+  --card-bg2: #dcc29f;
+  --card-border: rgba(139, 90, 43, 0.2);
+  --btn-bg: #c9a86c;
+  --btn-bg2: #a08255;
+  --btn-shadow: #7a6240;
+  --accent: #c9a86c;
+  --led-on: #ff4d4d;
+  --led-off: #4a3b2a;
+  --text-main: #3d261b;
+  --text-sub: #f5e6d3;
+  --text-muted: rgba(245, 230, 211, 0.45);
+  --overlay-tint: rgba(248, 236, 217, 0.15);
+
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
-  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-  color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.04) 0%, transparent 30%),
+    linear-gradient(160deg, var(--bg-mid) 0%, var(--bg-deep) 100%);
+  color: var(--text-sub);
+  font-family: 'Georgia', 'Times New Roman', serif;
   overflow: hidden;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
+.radio-app[data-skin='transistor'] {
+  --bg-deep: #0a0f1a;
+  --bg-mid: #1a263d;
+  --card-bg: #e8eef5;
+  --card-bg2: #b8c5d4;
+  --card-border: rgba(80, 110, 140, 0.25);
+  --btn-bg: #8da3b8;
+  --btn-bg2: #5f758a;
+  --btn-shadow: #3e4f5f;
+  --accent: #00d4ff;
+  --led-on: #00d4ff;
+  --led-off: #2a3a4a;
+  --text-main: #1a263d;
+  --text-sub: #e8eef5;
+  --text-muted: rgba(232, 238, 245, 0.45);
+  --overlay-tint: rgba(232, 238, 245, 0.12);
+}
+
+.radio-app[data-skin='tube'] {
+  --bg-deep: #1a0a0a;
+  --bg-mid: #3d1b1b;
+  --card-bg: #f5e0d3;
+  --card-bg2: #d4b0a0;
+  --card-border: rgba(120, 60, 50, 0.25);
+  --btn-bg: #c98b6c;
+  --btn-bg2: #a06655;
+  --btn-shadow: #7a4438;
+  --accent: #ff8c42;
+  --led-on: #ff8c42;
+  --led-off: #4a2e26;
+  --text-main: #3d1b1b;
+  --text-sub: #f5e0d3;
+  --text-muted: rgba(245, 224, 211, 0.45);
+  --overlay-tint: rgba(245, 224, 211, 0.12);
+}
+
+/* 顶部栏 */
 .app-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px 20px;
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  justify-content: space-between;
+  padding: 16px 20px;
   flex-shrink: 0;
 }
 
-.brand {
+.brand-mark {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.skin-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 20px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.brand-icon {
-  font-size: 24px;
-}
-
-.brand-text {
-  background: linear-gradient(90deg, #00d4ff, #a855f7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.search-box {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  gap: 6px;
   padding: 8px 14px;
-  max-width: 420px;
-}
-
-.search-box input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #fff;
-  font-size: 14px;
-}
-
-.search-box input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.settings-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  color: #fff;
-  font-size: 18px;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.main-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.home-view {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.category-bar {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-
-.category-chip {
-  padding: 6px 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+  border: 1px solid var(--accent);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--accent);
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
-.category-chip:hover,
-.category-chip.active {
-  background: linear-gradient(90deg, #00d4ff, #a855f7);
-  border-color: transparent;
-  color: #fff;
-}
-
-.loading-state,
-.empty-state {
-  text-align: center;
-  padding: 80px 20px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.source-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
-  padding-bottom: 100px;
-}
-
-.source-card {
-  position: relative;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 14px;
-  transition: all 0.2s;
-}
-
-.source-card:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
-}
-
-.source-card.playing {
-  border-color: #00d4ff;
-  box-shadow: 0 0 0 1px #00d4ff;
-}
-
-.card-cover {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
-  margin-bottom: 12px;
-}
-
-.card-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.cover-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48px;
-}
-
-.play-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
-  border: none;
-  color: #fff;
-  font-size: 36px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.source-card:hover .play-overlay {
-  opacity: 1;
-}
-
-.card-info {
-  min-width: 0;
-}
-
-.card-title {
-  margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card-meta {
-  margin: 0 0 6px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-  display: flex;
-  gap: 8px;
-}
-
-.card-desc {
-  margin: 0;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.favorite-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(0, 0, 0, 0.4);
-  border: none;
-  border-radius: 50%;
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+.skin-icon {
   font-size: 16px;
 }
 
-.settings-view {
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.settings-header {
+/* 主舞台 */
+.main-stage {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  padding: 20px;
+}
+
+.loading-text,
+.empty-text {
+  font-size: 16px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+/* 复古电台卡片 */
+.station-card {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: linear-gradient(145deg, var(--card-bg) 0%, var(--card-bg2) 100%);
+  border-radius: 28px;
+  padding: 26px 22px 30px;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.55),
+    0 12px 24px rgba(0, 0, 0, 0.35),
+    inset 0 2px 4px rgba(255, 255, 255, 0.6),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.12);
+  border: 2px solid var(--card-border);
+}
+
+.station-card.playing {
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.55),
+    0 12px 24px rgba(0, 0, 0, 0.35),
+    0 0 30px color-mix(in srgb, var(--accent) 30%, transparent),
+    inset 0 2px 4px rgba(255, 255, 255, 0.6),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.card-screw {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #b8a080, #6b5344);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.screw-tl { top: 14px; left: 14px; }
+.screw-tr { top: 14px; right: 14px; }
+.screw-bl { bottom: 14px; left: 14px; }
+.screw-br { bottom: 14px; right: 14px; }
+
+.tuner-window {
+  background: linear-gradient(180deg, #1a120d 0%, #0d0906 100%);
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-bottom: 22px;
+  box-shadow:
+    inset 0 3px 6px rgba(0, 0, 0, 0.8),
+    0 1px 1px rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--accent);
+}
+
+.led-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.led {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--led-off);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  transition: all 0.3s ease;
+}
+
+.led.on {
+  background: var(--led-on);
+  box-shadow:
+    0 0 8px var(--led-on),
+    0 0 16px color-mix(in srgb, var(--led-on) 60%, transparent),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.freq-text {
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* 封面区域 */
+.cover-area {
+  display: flex;
+  justify-content: center;
   margin-bottom: 24px;
 }
 
-.back-btn {
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 18px;
+.cover-frame {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  padding: 8px;
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
-.settings-header h2 {
-  flex: 1;
-  margin: 0;
-  font-size: 18px;
+.cover-frame img,
+.cover-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: linear-gradient(145deg, var(--bg-mid) 0%, var(--bg-deep) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  animation: spin 24s linear infinite;
+}
+
+.cover-mask {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 30% 30%, transparent 40%, var(--overlay-tint) 100%);
+  box-shadow:
+    inset 0 0 20px var(--overlay-tint),
+    inset 0 0 40px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 信息区域 */
+.info-area {
   text-align: center;
 }
 
-.spacer {
-  width: 36px;
+.station-name {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 1px;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
 }
 
-.settings-content {
+.station-meta {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.meta-chip {
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.5) 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.meta-chip.secondary {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.4) 100%);
+}
+
+/* 底部控制面板 */
+.control-deck {
+  flex-shrink: 0;
+  padding: 16px 24px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.3) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.knobs-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 48px;
+  margin-bottom: 28px;
+}
+
+.knob-wrap {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-}
-
-.section h3 {
-  margin: 0 0 12px;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.input-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.input-row input {
-  flex: 1;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  outline: none;
-}
-
-.input-row input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.input-row button,
-.secondary-btn {
-  padding: 12px 20px;
-  border-radius: 10px;
-  border: none;
-  background: linear-gradient(90deg, #00d4ff, #a855f7);
-  color: #fff;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.secondary-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.about-card {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 16px;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.about-card p {
-  margin: 6px 0;
-}
-
-.player-bar {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 20px;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
+  gap: 10px;
 }
 
-.player-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  flex: 1;
-}
-
-.player-cover,
-.player-cover-fallback {
-  width: 52px;
-  height: 52px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
-}
-
-.player-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.player-cover-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-}
-
-.player-text {
-  min-width: 0;
-}
-
-.player-name {
-  margin: 0 0 4px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.player-status {
-  margin: 0;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.player-status .error {
-  color: #ff6b6b;
-}
-
-.player-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.control-btn {
-  width: 44px;
-  height: 44px;
+/* 物理旋钮 */
+.physical-knob {
+  position: relative;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  font-size: 18px;
+  background: transparent;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.control-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.knob-top {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--btn-bg) 0%, var(--btn-bg2) 100%);
+  box-shadow:
+    0 8px 0 var(--btn-shadow),
+    0 12px 20px rgba(0, 0, 0, 0.45),
+    inset 0 2px 3px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.player-volume {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 140px;
-  flex-shrink: 0;
+.physical-knob:active .knob-top {
+  transform: translateY(8px);
+  box-shadow:
+    0 0 0 var(--btn-shadow),
+    0 4px 8px rgba(0, 0, 0, 0.45),
+    inset 0 2px 3px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.3);
 }
 
-.player-volume input {
-  flex: 1;
+.knob-side {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      var(--btn-shadow) 0deg 4deg,
+      var(--btn-bg2) 4deg 8deg
+    );
+  z-index: 1;
 }
 
-.toast {
-  position: fixed;
-  bottom: 90px;
+.knob-marker {
+  position: absolute;
+  top: 14px;
   left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: 20px;
-  font-size: 13px;
-  z-index: 1000;
-  pointer-events: none;
+  width: 4px;
+  height: 16px;
+  margin-left: -2px;
+  background: var(--text-main);
+  border-radius: 2px;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
 }
 
-@media (max-width: 640px) {
-  .app-header {
-    gap: 10px;
-    padding: 10px 14px;
+.power-knob.playing .knob-top {
+  background: linear-gradient(145deg, var(--led-on) 0%, color-mix(in srgb, var(--led-on) 70%, black) 100%);
+}
+
+.knob-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+/* 文字控制 */
+.text-controls {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+}
+
+.text-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.text-btn:hover,
+.text-btn.active {
+  color: var(--accent);
+}
+
+.error-hint {
+  text-align: center;
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: #ff8a8a;
+  min-height: 18px;
+}
+
+/* 弹窗 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.retro-panel {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(145deg, var(--card-bg) 0%, var(--card-bg2) 100%);
+  border-radius: 24px 24px 0 0;
+  padding: 24px;
+  box-shadow:
+    0 -8px 24px rgba(0, 0, 0, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.5);
+}
+
+.modal-title {
+  margin: 0 0 18px;
+  text-align: center;
+  font-size: 18px;
+  color: var(--text-main);
+  letter-spacing: 2px;
+}
+
+.category-list,
+.timer-list,
+.skin-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.category-item,
+.timer-item,
+.skin-item {
+  padding: 14px 8px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.25) 100%);
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.25),
+    0 5px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  transition: all 0.1s ease;
+}
+
+.category-item:active,
+.timer-item:active,
+.skin-item:active {
+  transform: translateY(4px);
+  box-shadow:
+    0 0 0 rgba(0, 0, 0, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.category-item.active,
+.timer-item.cancel,
+.skin-item.active {
+  background: linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, black) 100%);
+  color: var(--bg-deep);
+  box-shadow:
+    0 4px 0 color-mix(in srgb, var(--accent) 50%, black),
+    0 5px 8px rgba(0, 0, 0, 0.2);
+}
+
+.timer-list {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 480px) {
+  .station-card {
+    max-width: 400px;
+    padding: 30px 26px 34px;
   }
 
-  .brand-text {
-    display: none;
+  .cover-frame {
+    width: 190px;
+    height: 190px;
   }
 
-  .search-box {
-    max-width: none;
+  .station-name {
+    font-size: 26px;
   }
 
-  .source-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-
-  .player-bar {
-    flex-wrap: wrap;
-    padding: 10px 14px;
-  }
-
-  .player-volume {
-    width: 100%;
+  .physical-knob {
+    width: 100px;
+    height: 100px;
   }
 }
 </style>
